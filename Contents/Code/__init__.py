@@ -1,9 +1,9 @@
 import urllib2, base64, simplejson, time
 json = simplejson
 
-NAME = 'TVHeadend'
+NAME = 'TV-Headend Next Generation'
 #ART = 'art-default.jpg'
-PLUGIN_PREFIX = '/video/tvheadend'
+PLUGIN_PREFIX = '/video/tvheadend-ng'
 
 # Preferences
 options_username = '%s' % (Prefs['tvheadend_user']) 
@@ -11,7 +11,6 @@ options_password = '%s' % (Prefs['tvheadend_pass'])
 options_hostname = '%s' % (Prefs['tvheadend_host'])
 options_web_port = '%s' % (Prefs['tvheadend_web_port'])
 options_htsp_port = '%s' % (Prefs['tvheadend_htsp_port'])
-options_transcode = '%s' % (Prefs['tvheadend_transcode'])
 
 # URL structure
 url_structure = 'stream/channel'
