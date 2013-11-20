@@ -1,0 +1,37 @@
+[
+	{
+		"id":		"tvheadend_user",
+		"label":	"Username",
+		"type": 	"text",
+		"default": 	"", 
+	},
+	
+	{
+		"id": 		"tvheadend_pass",
+		"label": 	"Password",
+		"type": 	"text",
+		"option": 	"hidden",
+		"default": 	"",
+	},
+	
+	{
+		"id": 		"tvheadend_host",
+		"label": 	"Hostname or Ipaddress",
+		"type": 	"text",
+		"default": 	"", 
+	},
+	
+	{
+		"id":		"tvheadend_web_port",
+		"label": 	"Web Port",
+		"type": 	"text",
+		"default": 	"9981", 
+	},
+	
+        {
+                "id":           "tvheadend_htsp_port",
+                "label":        "HTSP Port",
+                "type":         "text",
+                "default":      "9982",
+        },
+]
