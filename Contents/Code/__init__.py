@@ -14,7 +14,7 @@ options_htsp_port = '%s' % (Prefs['tvheadend_htsp_port'])
 
 # URL structure
 url_structure = 'stream/channel'
-url_transcode = '?mux=mp4&acodec=aac&vcodec=H264&transcode=1&resolution=384'
+url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1&resolution=384'
 url_base = 'http://%s:%s@%s:%s/%s/' % (options_username, options_password, options_hostname, options_web_port, url_structure)
 
 # Static texts
@@ -28,6 +28,9 @@ ICON_MAIN = 'main.png'
 ICON_SETTINGS = 'settings.png'
 ICON_CHANNEL = 'channel.png'
 ICON_TAG = 'tag.png'
+
+# Debug mode
+debug = True
 
 ####################################################################################################
 
@@ -136,6 +139,7 @@ def getChannelsByTag(prevTitle):
 	tagList = ObjectContainer(title1=TEXT_TAGCHANNELS, no_cache=True)
 
 	for tag in json_data['entries']:
+		if debug == True: Log("Getting channellist for tag: " + tag['name'])
 		tagList.add(DirectoryObject(key=Callback(getChannels, prevTitle=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
 	return tagList 
 
@@ -145,55 +149,58 @@ def getChannels(prevTitle, tag=int(0)):
 	channelList = ObjectContainer(title1=prevTitle, no_cache=True)
 
 	for channel in json_data['entries']:
-		chaninfo = getChannelInfo(channel['uuid'], json_epg)
-		name = ''
-		icon = ''
-		id = 0
-		duration = 0
-		summary = ''
-		epg_start = 0
-		epg_stop = 0
 		if tag > 0:
 			tags = channel['tags']
 			for tids in tags:
 				if (tag == int(tids)):
-					name = channel['name']
-					id = channel['uuid']
-					if chaninfo['iconurl'] != "":
-						icon = chaninfo['iconurl']
-					else:
-						icon = R(ICON_CHANNEL)
-
+					if debug == True: Log("Got channel with tag: " + channel['name'])
+					chaninfo = getChannelInfo(channel['uuid'], json_epg)
+					channelList.add(createTVChannelObject(channel, chaninfo))
 		else:
-			name = channel['name']
-			id = channel['uuid']
-			if chaninfo['iconurl'] != "":
-				icon = chaninfo['iconurl']
-			else:
-				icon = R(ICON_CHANNEL)
+			chaninfo = getChannelInfo(channel['uuid'], json_epg)
+			channelList.add(createTVChannelObject(channel, chaninfo))
 
-		if name != '':
-                       # Add epg data.
-			if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
-				summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], summary)
-				duration = chaninfo['epg_duration'];
-				name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + "-" + chaninfo['epg_stop'] + ")"
-
-			vurl = "%s%s%s" % (url_base, id, url_transcode)
-			vco = VideoClipObject(
-				key = Callback(lookupVideoObject, video_url = vurl, title = name, thumb = icon),
-				rating_key = vurl,
-				title = name,
-				thumb = icon,
-				items = [
-					MediaObject(
-						container = Container.MP4,
-						video_codec = VideoCodec.H264,
-						audio_codec = AudioCodec.AAC,
-						audio_channels = 2,
-						parts = [PartObject(key = vurl)]
-					)
-					]
-				)
-			channelList.add(vco)
        	return channelList
+
+def createTVChannelObject(channel, chaninfo, container = False):
+	name = channel['name'] 
+	if chaninfo['iconurl'] != "":
+		icon = chaninfo['iconurl']
+	else:
+		icon = R(ICON_CHANNEL)
+	id = channel['uuid'] 
+	summary = ''
+
+	# Add epg data.
+	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
+		summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], summary)
+		duration = chaninfo['epg_duration'];
+		name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + "-" + chaninfo['epg_stop'] + ")"
+
+	# Build streaming url.
+	vurl = "%s%s%s" % (url_base, id, url_transcode)
+
+	vco = VideoClipObject(
+		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, container = True),
+		rating_key = id,
+		title = name,
+		summary = summary,
+		duration = chaninfo['epg_duration'],
+		thumb = icon,
+		items = [
+			MediaObject(
+				container = 'mpegts',
+				video_codec = VideoCodec.H264,
+				audio_codec = AudioCodec.AAC,
+				audio_channels = 2,
+				optimized_for_streaming = True,
+				parts = [PartObject(key = vurl)]
+			)
+		]
+	)
+
+	if container:
+		return ObjectContainer(objects = [vco])
+	else:
+		return vco
+	return vco
