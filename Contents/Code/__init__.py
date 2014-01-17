@@ -1,65 +1,80 @@
 import urllib2, base64, simplejson, time
 json = simplejson
 
-NAME = 'TV-Headend Next Generation'
-#ART = 'art-default.jpg'
-PLUGIN_PREFIX = '/video/tvheadend-ng'
+# Static text. 
+TEXT_NAME = 'TV-Headend Next Generation'
+TEXT_TITLE = 'TV-Headend' 
 
-# Preferences
-options_username = '%s' % (Prefs['tvheadend_user']) 
-options_password = '%s' % (Prefs['tvheadend_pass'])
-options_hostname = '%s' % (Prefs['tvheadend_host'])
-options_web_port = '%s' % (Prefs['tvheadend_web_port'])
-options_htsp_port = '%s' % (Prefs['tvheadend_htsp_port'])
-
-# URL structure
-url_structure = 'stream/channel'
-url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1&resolution=384'
-url_base = 'http://%s:%s@%s:%s/%s/' % (options_username, options_password, options_hostname, options_web_port, url_structure)
-
-# Static texts
-TEXT_TITLE = u'TV-Headend'
-TEXT_ALLCHANNELS = u'All channels'
-TEXT_TAGCHANNELS = u'Tagged channels'
-TEXT_PREFERENCES = u'Settings'
-
-# Resources
+# Image resources.
 ICON_MAIN = 'main.png'
 ICON_SETTINGS = 'settings.png'
 ICON_CHANNEL = 'channel.png'
 ICON_TAG = 'tag.png'
 
-# Debug mode
+# Other definitions.
+PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
 
 ####################################################################################################
 
 def Start():
-	Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, NAME, ICON_MAIN)
+	Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, TEXT_NAME, ICON_MAIN)
 
 ####################################################################################################
 
-@handler('/video/tvheadend', TEXT_TITLE, thumb=ICON_MAIN)
+@handler('/video/tvheadend-ng', TEXT_TITLE, thumb=ICON_MAIN)
 def MainMenu():
-	oc = ObjectContainer(title1=TEXT_TITLE)
-	oc.add(DirectoryObject(key=Callback(getChannels, prevTitle=TEXT_ALLCHANNELS), title=TEXT_ALLCHANNELS))
-	oc.add(DirectoryObject(key=Callback(getChannelsByTag, prevTitle=TEXT_TITLE), title=TEXT_TAGCHANNELS))
-	oc.add(PrefsObject(title=TEXT_PREFERENCES, thumb=R(ICON_SETTINGS)))
+	oc = ObjectContainer(no_cache=True)	
+
+	if checkConfig():
+		oc.title1 = TEXT_TITLE
+		oc.header = None
+		oc.message = None 
+		oc = ObjectContainer(title1=TEXT_TITLE, no_cache=True)
+		oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans')))
+		oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans')))
+		oc.add(PrefsObject(title=L('preferences'), thumb=R(ICON_SETTINGS)))
+	else:
+		oc.title1 = None
+		oc.header = L('header_attention')
+                oc.message = L('error_no_config')
+		oc.add(PrefsObject(title=L('preferences'), thumb=R(ICON_SETTINGS)))
+
 	return oc
 
 ####################################################################################################
+
+def checkConfig():
+	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
+		# To validate the tvheadend connection, the function to fetch the channeltags will be used.
+		json_data = getTVHeadendJsonOld('channeltags')
+		return True
+	else:
+		return False
+	
+
+#def ValidatePrefs():
+#	configok = True
+#	return MessageContainer(
+#		"Success",
+#		"Info provided is ok"
+#	)
 
 def getTVHeadendJsonOld(what, url = False):
 	tvh_url = dict( channeltags='op=listTags', epg='start=0&limit=300')
 	if url != False: 
 		tvh_url[what] = url
-        base64string = base64.encodestring('%s:%s' % (options_username, options_password)).replace('\n', '')
-        request = urllib2.Request("http://%s:%s/%s" % (options_hostname, options_web_port, what),tvh_url[what])
-        request.add_header("Authorization", "Basic %s" % base64string)
-        response = urllib2.urlopen(request)
-        json_tmp = response.read()
-        json_data = json.loads(json_tmp)
-        return json_data
+
+	try:
+		base64string = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
+		request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], what),tvh_url[what])
+		request.add_header("Authorization", "Basic %s" % base64string)
+		response = urllib2.urlopen(request)
+		json_tmp = response.read()
+		json_data = json.loads(json_tmp)
+	except:
+		return False	
+	return json_data
 
 def getTVHeadendJson(apirequest, arg1):
 	api = dict(
@@ -68,13 +83,17 @@ def getTVHeadendJson(apirequest, arg1):
 		getIdNode='api/idnode/load?uuid=' + arg1
 	)
 
-	base64string = base64.encodestring('%s:%s' % (options_username, options_password)).replace('\n', '')
-	request = urllib2.Request("http://%s:%s/%s" % (options_hostname, options_web_port, api[apirequest]))
-	request.add_header("Authorization", "Basic %s" % base64string)
-	response = urllib2.urlopen(request)
+	try:
+		base64string = base64.encodestring('%s:%s' % (options_username, options_password)).replace('\n', '')
+		request = urllib2.Request("http://%s:%s/%s" % (options_hostname, options_web_port, api[apirequest]))
+		request.add_header("Authorization", "Basic %s" % base64string)
+		response = urllib2.urlopen(request)
 
-	json_tmp = response.read()
-	json_data = json.loads(json_tmp)
+		json_tmp = response.read()
+		json_data = json.loads(json_tmp)
+	except:
+		return False
+
 	return json_data
 
 ####################################################################################################
@@ -112,54 +131,49 @@ def getChannelInfo(uuid, json_epg):
 				result['epg_stop'] = time.strftime("%H:%M", time.localtime(int(epg['stop'])));
 	return result
 
-def lookupVideoObject(video_url, title, thumb):
-	oc = ObjectContainer()
-
-	oc.add(VideoClipObject(
-		key = Callback(lookupVideoObject, video_url = video_url, title = title, thumb = thumb),
-		rating_key = video_url,
-		title = title,
-		thumb = thumb,
-		items = [
-			MediaObject(
-				container = Container.MP4,
-				video_codec = VideoCodec.H264,
-				audio_codec = AudioCodec.AAC,
-				audio_channels = 2,
-				parts = [PartObject(key = video_url)]
-			)
-		]
-	))
-        return oc
-
 ####################################################################################################
 
-def getChannelsByTag(prevTitle):
+def getChannelsByTag(title):
 	json_data = getTVHeadendJsonOld('channeltags')
-	tagList = ObjectContainer(title1=TEXT_TAGCHANNELS, no_cache=True)
+	tagList = ObjectContainer(no_cache=True)
 
-	for tag in json_data['entries']:
-		if debug == True: Log("Getting channellist for tag: " + tag['name'])
-		tagList.add(DirectoryObject(key=Callback(getChannels, prevTitle=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
+	if json_data != False:
+		tagList.title1 = L('tagchans')
+		tagList.header = None
+		tagList.message = None
+		for tag in json_data['entries']:
+			if debug == True: Log("Getting channellist for tag: " + tag['name'])
+			tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
+	else:
+		tagList.title1 = None
+		tagList.header = L('error')
+		tagList.message = L('error_request_failed') 
 	return tagList 
 
-def getChannels(prevTitle, tag=int(0)):
+def getChannels(title, tag=int(0)):
 	json_data = getTVHeadendJson('getChannelGrid', '')
 	json_epg = getEPG()
-	channelList = ObjectContainer(title1=prevTitle, no_cache=True)
+	channelList = ObjectContainer(no_cache=True)
 
-	for channel in json_data['entries']:
-		if tag > 0:
-			tags = channel['tags']
-			for tids in tags:
-				if (tag == int(tids)):
-					if debug == True: Log("Got channel with tag: " + channel['name'])
-					chaninfo = getChannelInfo(channel['uuid'], json_epg)
-					channelList.add(createTVChannelObject(channel, chaninfo))
-		else:
-			chaninfo = getChannelInfo(channel['uuid'], json_epg)
-			channelList.add(createTVChannelObject(channel, chaninfo))
-
+	if json_data != False:
+		channelList.title1 = title
+		channelList.header = None
+		channelList.message = None
+		for channel in json_data['entries']:
+			if tag > 0:
+				tags = channel['tags']
+				for tids in tags:
+					if (tag == int(tids)):
+						if debug == True: Log("Got channel with tag: " + channel['name'])
+						chaninfo = getChannelInfo(channel['uuid'], json_epg)
+						channelList.add(createTVChannelObject(channel, chaninfo))
+			else:
+				chaninfo = getChannelInfo(channel['uuid'], json_epg)
+				channelList.add(createTVChannelObject(channel, chaninfo))
+	else:
+		channelList.title1 = None;
+		channelList.header = L('error')
+		channelList.message = L('error_request_failed')
        	return channelList
 
 def createTVChannelObject(channel, chaninfo, container = False):
@@ -178,6 +192,9 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + "-" + chaninfo['epg_stop'] + ")"
 
 	# Build streaming url.
+	url_structure = 'stream/channel'
+	url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1&resolution=384'
+	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
 	vurl = "%s%s%s" % (url_base, id, url_transcode)
 
 	vco = VideoClipObject(

@@ -1,0 +1,9 @@
+{
+  "attention": "Attention",
+  "error": "Error",
+  "error_no_config": "Configuration error! Please check the channel settings.",
+  "error_request_failed": "Request failed! Please check channel settings and tvheadend status.",
+  "allchans": "All channels",
+  "tagchans": "Tagged channels",
+  "preferences": "Settings"
+}

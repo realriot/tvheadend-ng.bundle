@@ -28,10 +28,4 @@
 		"default": 	"9981", 
 	},
 	
-        {
-                "id":           "tvheadend_htsp_port",
-                "label":        "HTSP Port",
-                "type":         "text",
-                "default":      "9982",
-        },
 ]
