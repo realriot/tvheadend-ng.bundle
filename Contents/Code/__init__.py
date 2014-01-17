@@ -48,6 +48,10 @@ def checkConfig():
 	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
 		# To validate the tvheadend connection, the function to fetch the channeltags will be used.
 		json_data = getTVHeadendJsonOld('channeltags')
+		if json_data != False:
+			return True
+		else:
+			return False
 		return True
 	else:
 		return False
@@ -84,16 +88,15 @@ def getTVHeadendJson(apirequest, arg1):
 	)
 
 	try:
-		base64string = base64.encodestring('%s:%s' % (options_username, options_password)).replace('\n', '')
-		request = urllib2.Request("http://%s:%s/%s" % (options_hostname, options_web_port, api[apirequest]))
-		request.add_header("Authorization", "Basic %s" % base64string)
-		response = urllib2.urlopen(request)
+                base64string = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
+                request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], api[apirequest]))
+                request.add_header("Authorization", "Basic %s" % base64string)
+                response = urllib2.urlopen(request)
 
-		json_tmp = response.read()
-		json_data = json.loads(json_tmp)
+                json_tmp = response.read()
+                json_data = json.loads(json_tmp)
 	except:
 		return False
-
 	return json_data
 
 ####################################################################################################
