@@ -19,12 +19,15 @@ debug = True
 
 def Start():
 	Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, TEXT_NAME, ICON_MAIN)
+	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
+	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
+	HTTP.CacheTime = 1
 
 ####################################################################################################
 
 @handler('/video/tvheadend-ng', TEXT_TITLE, thumb=ICON_MAIN)
 def MainMenu():
-	oc = ObjectContainer(no_cache=True)	
+	oc = ObjectContainer(view_group='InfoList', no_cache=True)	
 
 	if checkConfig():
 		oc.title1 = TEXT_TITLE
@@ -52,17 +55,8 @@ def checkConfig():
 			return True
 		else:
 			return False
-		return True
 	else:
 		return False
-	
-
-#def ValidatePrefs():
-#	configok = True
-#	return MessageContainer(
-#		"Success",
-#		"Info provided is ok"
-#	)
 
 def getTVHeadendJsonOld(what, url = False):
 	tvh_url = dict( channeltags='op=listTags', epg='start=0&limit=300')
@@ -196,10 +190,20 @@ def createTVChannelObject(channel, chaninfo, container = False):
 
 	# Build streaming url.
 	url_structure = 'stream/channel'
-	url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1&resolution=384'
 	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
-	vurl = "%s%s%s" % (url_base, id, url_transcode)
+	url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1'
+	vurl = url_base + id + url_transcode
 
+	# Create media object for a 576px resolution.
+	mo384 = MediaObject(
+		container = 'mpegts',
+		video_codec = VideoCodec.H264,
+		audio_codec = AudioCodec.AAC,
+		audio_channels = 2,
+		optimized_for_streaming = False,
+		video_resolution = 384,
+		parts = [PartObject(key = vurl + "&resolution=384")]
+	)
 	vco = VideoClipObject(
 		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, container = True),
 		rating_key = id,
@@ -207,17 +211,47 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		summary = summary,
 		duration = chaninfo['epg_duration'],
 		thumb = icon,
-		items = [
-			MediaObject(
-				container = 'mpegts',
-				video_codec = VideoCodec.H264,
-				audio_codec = AudioCodec.AAC,
-				audio_channels = 2,
-				optimized_for_streaming = True,
-				parts = [PartObject(key = vurl)]
-			)
-		]
 	)
+	vco.add(mo384)
+
+	# Create media object for a 576px resolution.
+        mo576 = MediaObject(
+                container = 'mpegts',
+                video_codec = VideoCodec.H264,
+                audio_codec = AudioCodec.AAC,
+                audio_channels = 2,
+                optimized_for_streaming = False,
+        )
+	if channel['name'].endswith('HD'):
+		mo576.video_resolution = 576
+		mo576.parts = [PartObject(key = vurl + "&resolution=576")]
+	else:
+		mo576.video_resolution = 576
+		mo576.parts = [PartObject(key = vurl)]	 
+	vco.add(mo576)
+
+	# Create mediaobjects for hd tv-channels.
+	if channel['name'].endswith('HD'):
+		mo768 = MediaObject(
+			container = 'mpegts',
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = False,
+			video_resolution = 768,
+			parts = [PartObject(key = vurl + "&resolution=768")]
+		)
+		mo1080 = MediaObject(
+			container = 'mpegts',
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = False,
+			video_resolution = 1080,
+			parts = [PartObject(key = vurl)]
+		)
+		vco.add(mo768)
+		vco.add(mo1080)
 
 	if container:
 		return ObjectContainer(objects = [vco])
