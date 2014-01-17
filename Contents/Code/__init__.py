@@ -30,6 +30,7 @@ def MainMenu():
 	oc = ObjectContainer(view_group='InfoList', no_cache=True)	
 
 	if checkConfig():
+		if debug == True: Log("Configuration OK!")
 		oc.title1 = TEXT_TITLE
 		oc.header = None
 		oc.message = None 
@@ -38,6 +39,7 @@ def MainMenu():
 		oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans')))
 		oc.add(PrefsObject(title=L('preferences'), thumb=R(ICON_SETTINGS)))
 	else:
+		if debug == True: Log("Configuration error! Displaying error message...")
 		oc.title1 = None
 		oc.header = L('header_attention')
                 oc.message = L('error_no_config')
@@ -71,7 +73,9 @@ def getTVHeadendJsonOld(what, url = False):
 		json_tmp = response.read()
 		json_data = json.loads(json_tmp)
 	except:
+		if debug == True: Log("JSON-RequestOld failed!")
 		return False	
+	if debug == True: Log("JSON-RequestOld successfull!")
 	return json_data
 
 def getTVHeadendJson(apirequest, arg1):
@@ -90,7 +94,9 @@ def getTVHeadendJson(apirequest, arg1):
                 json_tmp = response.read()
                 json_data = json.loads(json_tmp)
 	except:
+		if debug == True: Log("JSON-Request failed!")
 		return False
+	if debug == True: Log("JSON-Request successfull!")
 	return json_data
 
 ####################################################################################################
@@ -142,6 +148,7 @@ def getChannelsByTag(title):
 			if debug == True: Log("Getting channellist for tag: " + tag['name'])
 			tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
 	else:
+		if debug == True: Log("Could not create tagelist! Showing error.")
 		tagList.title1 = None
 		tagList.header = L('error')
 		tagList.message = L('error_request_failed') 
@@ -168,6 +175,7 @@ def getChannels(title, tag=int(0)):
 				chaninfo = getChannelInfo(channel['uuid'], json_epg)
 				channelList.add(createTVChannelObject(channel, chaninfo))
 	else:
+		if debug == True: Log("Could not create channellist! Showing error.")
 		channelList.title1 = None;
 		channelList.header = L('error')
 		channelList.message = L('error_request_failed')
@@ -213,6 +221,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		thumb = icon,
 	)
 	vco.add(mo384)
+	if debug == True: Log("Creating MediaObject with vertical resolution: 384")
 
 	# Create media object for a 576px resolution.
         mo576 = MediaObject(
@@ -229,6 +238,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		mo576.video_resolution = 576
 		mo576.parts = [PartObject(key = vurl)]	 
 	vco.add(mo576)
+	if debug == True: Log("Creating MediaObject with vertical resolution: native or 576")
 
 	# Create mediaobjects for hd tv-channels.
 	if channel['name'].endswith('HD'):
@@ -251,7 +261,9 @@ def createTVChannelObject(channel, chaninfo, container = False):
 			parts = [PartObject(key = vurl)]
 		)
 		vco.add(mo768)
+		if debug == True: Log("Creating MediaObject with vertical resolution: 768")
 		vco.add(mo1080)
+		if debug == True: Log("Creating MediaObject with vertical resolution: native 1080")
 
 	if container:
 		return ObjectContainer(objects = [vco])
