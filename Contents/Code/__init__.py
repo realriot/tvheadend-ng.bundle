@@ -61,6 +61,7 @@ def checkConfig():
 		return False
 
 def getTVHeadendJsonOld(what, url = False):
+	if debug == True: Log("JSON-RequestOld: " + what)
 	tvh_url = dict( channeltags='op=listTags', epg='start=0&limit=300')
 	if url != False: 
 		tvh_url[what] = url
@@ -79,6 +80,7 @@ def getTVHeadendJsonOld(what, url = False):
 	return json_data
 
 def getTVHeadendJson(apirequest, arg1):
+	if debug == True: Log("JSON-Request: " + apirequest)
 	api = dict(
 		getChannelGrid='api/channel/grid?start=0&limit=999999',
 		getEpgGrid='api/epg/grid?start=0&limit=1000',
@@ -120,18 +122,20 @@ def getChannelInfo(uuid, json_epg):
 	if json_data['entries'][0]['params'][2].get('value'):
 		result['iconurl'] = json_data['entries'][0]['params'][2].get('value')
 
-	for epg in json_epg['events']:
-		if epg['channelUuid'] == uuid:
-			if epg.get('title'):
-				 result['epg_title'] = epg['title'];
-			if epg.get('description'):
-				 result['epg_description'] = epg['description'];
-			if epg.get('duration'):
-				result['epg_duration'] = epg['duration']*1000;
-			if epg.get('start'):
-				result['epg_start'] = time.strftime("%H:%M", time.localtime(int(epg['start'])));
-			if epg.get('stop'):
-				result['epg_stop'] = time.strftime("%H:%M", time.localtime(int(epg['stop'])));
+	# Check if we have data within the json_epg object.
+	if json_epg.get('events'):
+		for epg in json_epg['events']:
+			if epg['channelUuid'] == uuid:
+				if epg.get('title'):
+					 result['epg_title'] = epg['title'];
+				if epg.get('description'):
+					 result['epg_description'] = epg['description'];
+				if epg.get('duration'):
+					result['epg_duration'] = epg['duration']*1000;
+				if epg.get('start'):
+					result['epg_start'] = time.strftime("%H:%M", time.localtime(int(epg['start'])));
+				if epg.get('stop'):
+					result['epg_stop'] = time.strftime("%H:%M", time.localtime(int(epg['stop'])));
 	return result
 
 ####################################################################################################
@@ -189,8 +193,9 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		icon = R(ICON_CHANNEL)
 	id = channel['uuid'] 
 	summary = ''
+	duration = 0
 
-	# Add epg data.
+	# Add epg data. Otherwise leave the fields blank by default.
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
 		summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], summary)
 		duration = chaninfo['epg_duration'];
@@ -217,7 +222,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		rating_key = id,
 		title = name,
 		summary = summary,
-		duration = chaninfo['epg_duration'],
+		duration = duration,
 		thumb = icon,
 	)
 	vco.add(mo384)
