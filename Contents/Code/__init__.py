@@ -7,13 +7,11 @@ TEXT_TITLE = 'TV-Headend'
 
 # Image resources.
 ICON_MAIN = 'main.png'
-ICON_SETTINGS = 'settings.png'
-ICON_CHANNEL = 'channel.png'
-ICON_TAG = 'tag.png'
 
 # Other definitions.
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
+debug_epg = False 
 
 ####################################################################################################
 
@@ -37,13 +35,13 @@ def MainMenu():
 		oc = ObjectContainer(title1=TEXT_TITLE, no_cache=True)
 		oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans')))
 		oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans')))
-		oc.add(PrefsObject(title=L('preferences'), thumb=R(ICON_SETTINGS)))
+		oc.add(PrefsObject(title=L('preferences')))
 	else:
 		if debug == True: Log("Configuration error! Displaying error message...")
 		oc.title1 = None
 		oc.header = L('header_attention')
                 oc.message = L('error_no_config')
-		oc.add(PrefsObject(title=L('preferences'), thumb=R(ICON_SETTINGS)))
+		oc.add(PrefsObject(title=L('preferences')))
 
 	return oc
 
@@ -105,6 +103,11 @@ def getTVHeadendJson(apirequest, arg1):
 
 def getEPG():
 	json_data = getTVHeadendJson('getEpgGrid','')
+	if json_data != False:
+		if debug_epg == True: Log("Got EPG: " + json.dumps(json_data))
+	else:
+		if debug_epg == True: Log("Failed to fetch EPG!")	
+
 	return json_data
 
 def getChannelInfo(uuid, json_epg):
@@ -123,7 +126,7 @@ def getChannelInfo(uuid, json_epg):
 		result['iconurl'] = json_data['entries'][0]['params'][2].get('value')
 
 	# Check if we have data within the json_epg object.
-	if json_epg.get('events'):
+	if json_epg != False and json_epg.get('events'):
 		for epg in json_epg['events']:
 			if epg['channelUuid'] == uuid:
 				if epg.get('title'):
@@ -156,6 +159,11 @@ def getChannelsByTag(title):
 		tagList.title1 = None
 		tagList.header = L('error')
 		tagList.message = L('error_request_failed') 
+
+	if debug == True: Log("Count of configured tags within TV-Headend: " + str(len(tagList)))
+	if ( len(tagList) == 0 ):
+		tagList.header = L('attention')
+		tagList.message = L('error_no_tags')
 	return tagList 
 
 def getChannels(title, tag=int(0)):
@@ -190,7 +198,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	if chaninfo['iconurl'] != "":
 		icon = chaninfo['iconurl']
 	else:
-		icon = R(ICON_CHANNEL)
+		icon = ""
 	id = channel['uuid'] 
 	summary = ''
 	duration = 0
@@ -239,11 +247,12 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	if channel['name'].endswith('HD'):
 		mo576.video_resolution = 576
 		mo576.parts = [PartObject(key = vurl + "&resolution=576")]
+		if debug == True: Log("Creating MediaObject with vertical resolution: 576")
 	else:
 		mo576.video_resolution = 576
-		mo576.parts = [PartObject(key = vurl)]	 
+		mo576.parts = [PartObject(key = vurl)]
+		if debug == True: Log("Creating MediaObject with vertical resolution: native 576")
 	vco.add(mo576)
-	if debug == True: Log("Creating MediaObject with vertical resolution: native or 576")
 
 	# Create mediaobjects for hd tv-channels.
 	if channel['name'].endswith('HD'):

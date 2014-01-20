@@ -3,7 +3,8 @@
   "error": "Error",
   "error_no_config": "Configuration error! Please check the channel settings.",
   "error_request_failed": "Request failed! Please check channel settings and tvheadend status.",
+  "error_no_tags": "Please add tags to your TV-Headend. Otherwise bouquets are not available.",
   "allchans": "All channels",
-  "tagchans": "Tagged channels",
+  "tagchans": "Bouquets",
   "preferences": "Settings"
 }
