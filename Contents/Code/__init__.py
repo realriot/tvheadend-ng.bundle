@@ -128,7 +128,7 @@ def getChannelInfo(uuid, json_epg):
 	# Check if we have data within the json_epg object.
 	if json_epg != False and json_epg.get('events'):
 		for epg in json_epg['events']:
-			if epg['channelUuid'] == uuid:
+			if epg['channelUuid'] == uuid and time.time() > int(epg['start']) and time.time() < int(epg['stop']):
 				if epg.get('title'):
 					 result['epg_title'] = epg['title'];
 				if epg.get('description'):
@@ -235,6 +235,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	)
 	vco.add(mo384)
 	if debug == True: Log("Creating MediaObject with vertical resolution: 384")
+	if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=384")
 
 	# Create media object for a 576px resolution.
         mo576 = MediaObject(
@@ -243,15 +244,11 @@ def createTVChannelObject(channel, chaninfo, container = False):
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
                 optimized_for_streaming = False,
+		video_resolution = 576,
+		parts = [PartObject(key = vurl + "&resolution=576")]
         )
-	if channel['name'].endswith('HD'):
-		mo576.video_resolution = 576
-		mo576.parts = [PartObject(key = vurl + "&resolution=576")]
-		if debug == True: Log("Creating MediaObject with vertical resolution: 576")
-	else:
-		mo576.video_resolution = 576
-		mo576.parts = [PartObject(key = vurl)]
-		if debug == True: Log("Creating MediaObject with vertical resolution: native 576")
+	if debug == True: Log("Creating MediaObject with vertical resolution: 576")
+	if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=576")
 	vco.add(mo576)
 
 	# Create mediaobjects for hd tv-channels.
@@ -276,8 +273,10 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		)
 		vco.add(mo768)
 		if debug == True: Log("Creating MediaObject with vertical resolution: 768")
+		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=768")
 		vco.add(mo1080)
-		if debug == True: Log("Creating MediaObject with vertical resolution: native 1080")
+		if debug == True: Log("Creating MediaObject with vertical resolution: 1080")
+		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
 
 	if container:
 		return ObjectContainer(objects = [vco])
