@@ -151,7 +151,7 @@ def getChannelsByTag(title):
 		tagList.title1 = L('tagchans')
 		tagList.header = None
 		tagList.message = None
-		for tag in json_data['entries']:
+		for tag in sorted(json_data['entries'], key=lambda t: t['name']):
 			if debug == True: Log("Getting channellist for tag: " + tag['name'])
 			tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
 	else:
@@ -175,7 +175,7 @@ def getChannels(title, tag=int(0)):
 		channelList.title1 = title
 		channelList.header = None
 		channelList.message = None
-		for channel in json_data['entries']:
+		for channel in sorted(json_data['entries'], key=lambda t: t['number']):
 			if tag > 0:
 				tags = channel['tags']
 				for tids in tags:
@@ -277,6 +277,14 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		vco.add(mo1080)
 		if debug == True: Log("Creating MediaObject with vertical resolution: 1080")
 		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
+
+	# Create mediaobjects for native streaming.
+	monat = MediaObject(
+			optimized_for_streaming = False,
+			video_resolution = 0,
+			parts = [PartObject(key = url_base + id)]
+	)
+	vco.add(monat)
 
 	if container:
 		return ObjectContainer(objects = [vco])
