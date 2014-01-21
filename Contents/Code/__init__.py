@@ -215,16 +215,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1'
 	vurl = url_base + id + url_transcode
 
-	# Create media object for a 576px resolution.
-	mo384 = MediaObject(
-		container = 'mpegts',
-		video_codec = VideoCodec.H264,
-		audio_codec = AudioCodec.AAC,
-		audio_channels = 2,
-		optimized_for_streaming = False,
-		video_resolution = 384,
-		parts = [PartObject(key = vurl + "&resolution=384")]
-	)
+	# Create raw VideoClipObject.
 	vco = VideoClipObject(
 		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, container = True),
 		rating_key = id,
@@ -233,59 +224,73 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		duration = duration,
 		thumb = icon,
 	)
-	vco.add(mo384)
-	if debug == True: Log("Creating MediaObject with vertical resolution: 384")
-	if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=384")
 
-	# Create media object for a 576px resolution.
-        mo576 = MediaObject(
-                container = 'mpegts',
-                video_codec = VideoCodec.H264,
-                audio_codec = AudioCodec.AAC,
-                audio_channels = 2,
-                optimized_for_streaming = False,
-		video_resolution = 576,
-		parts = [PartObject(key = vurl + "&resolution=576")]
-        )
-	if debug == True: Log("Creating MediaObject with vertical resolution: 576")
-	if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=576")
-	vco.add(mo576)
-
-	# Create mediaobjects for hd tv-channels.
-	if channel['name'].endswith('HD'):
-		mo768 = MediaObject(
+	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
+	if Client.Product != "Plex Home Theater":
+		# Create media object for a 576px resolution.
+		mo384 = MediaObject(
 			container = 'mpegts',
 			video_codec = VideoCodec.H264,
 			audio_codec = AudioCodec.AAC,
 			audio_channels = 2,
 			optimized_for_streaming = False,
-			video_resolution = 768,
-			parts = [PartObject(key = vurl + "&resolution=768")]
+			video_resolution = 384,
+			parts = [PartObject(key = vurl + "&resolution=384")]
 		)
-		mo1080 = MediaObject(
+		vco.add(mo384)
+		if debug == True: Log("Creating MediaObject with vertical resolution: 384")
+		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=384")
+
+		# Create media object for a 576px resolution.
+		mo576 = MediaObject(
 			container = 'mpegts',
 			video_codec = VideoCodec.H264,
 			audio_codec = AudioCodec.AAC,
 			audio_channels = 2,
 			optimized_for_streaming = False,
-			video_resolution = 1080,
-			parts = [PartObject(key = vurl)]
+			video_resolution = 576,
+			parts = [PartObject(key = vurl + "&resolution=576")]
 		)
-		vco.add(mo768)
-		if debug == True: Log("Creating MediaObject with vertical resolution: 768")
-		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=768")
-		vco.add(mo1080)
-		if debug == True: Log("Creating MediaObject with vertical resolution: 1080")
-		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
+		if debug == True: Log("Creating MediaObject with vertical resolution: 576")
+		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=576")
+		vco.add(mo576)
 
-	# Create mediaobjects for native streaming.
-	monat = MediaObject(
-			optimized_for_streaming = False,
-			video_resolution = 0,
-			parts = [PartObject(key = url_base + id)]
-	)
-	vco.add(monat)
+		# Create mediaobjects for hd tv-channels.
+		if channel['name'].endswith('HD'):
+			mo768 = MediaObject(
+				container = 'mpegts',
+				video_codec = VideoCodec.H264,
+				audio_codec = AudioCodec.AAC,
+				audio_channels = 2,
+				optimized_for_streaming = False,
+				video_resolution = 768,
+				parts = [PartObject(key = vurl + "&resolution=768")]
+			)
+			mo1080 = MediaObject(
+				container = 'mpegts',
+				video_codec = VideoCodec.H264,
+				audio_codec = AudioCodec.AAC,
+				audio_channels = 2,
+				optimized_for_streaming = False,
+				video_resolution = 1080,
+				parts = [PartObject(key = vurl)]
+			)
+			vco.add(mo768)
+			if debug == True: Log("Creating MediaObject with vertical resolution: 768")
+			if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=768")
+			vco.add(mo1080)
+			if debug == True: Log("Creating MediaObject with vertical resolution: 1080")
+			if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
+	else:
+		# Create mediaobjects for native streaming.
+		monat = MediaObject(
+				optimized_for_streaming = False,
+				video_resolution = 0,
+				parts = [PartObject(key = url_base + id)]
+		)
+		vco.add(monat)
 
+	if debug == True and Client.Product: Log("Created VideoObject for plex product: " + Client.Product + " on " + Client.Platform)
 	if container:
 		return ObjectContainer(objects = [vco])
 	else:
