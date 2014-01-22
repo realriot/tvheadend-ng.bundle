@@ -205,9 +205,11 @@ def createTVChannelObject(channel, chaninfo, container = False):
 
 	# Add epg data. Otherwise leave the fields blank by default.
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
-		summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], summary)
-		duration = chaninfo['epg_duration'];
 		name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + "-" + chaninfo['epg_stop'] + ")"
+		duration = chaninfo['epg_duration'];
+		if container == True:
+			summary = chaninfo['epg_description'] 
+		#summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], chaninfo['epg_description'])
 
 	# Build streaming url.
 	url_structure = 'stream/channel'
@@ -226,7 +228,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Client.Product != "Plex Home Theater":
+	if Client.Product and Client.Product != "Plex Home Theater":
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
@@ -285,12 +287,17 @@ def createTVChannelObject(channel, chaninfo, container = False):
 		# Create mediaobjects for native streaming.
 		monat = MediaObject(
 				optimized_for_streaming = False,
-				video_resolution = 0,
 				parts = [PartObject(key = url_base + id)]
 		)
 		vco.add(monat)
+		if debug == True: Log("Creating MediaObject for native streaming")
+		if debug == True: Log("Providing Streaming-URL: " + url_base + id)
 
-	if debug == True and Client.Product: Log("Created VideoObject for plex product: " + Client.Product + " on " + Client.Platform)
+	if debug == True:
+		if Client.Product:
+			Log("Created VideoObject for plex product: " + Client.Product + " on " + Client.Platform)
+		else:
+			Log("Could not determine plex product!")
 	if container:
 		return ObjectContainer(objects = [vco])
 	else:
