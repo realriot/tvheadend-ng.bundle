@@ -355,7 +355,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Client.Product and Client.Product != "Plex Home Theater":
+	if Client.Product != "Plex Home Theater":
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
