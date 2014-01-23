@@ -27,5 +27,16 @@
 		"type": 	"text",
 		"default": 	"9981", 
 	},
-	
+	{
+		"id":		"gracenote_tvlogos",
+		"label":	"Gracenote channel logos",
+		"type":		"bool",
+		"default":	"false",
+	},
+	{
+		"id":		"gracenote_clientid",
+		"label":	"Gracenote Client ID (XXXXXX-XXXX...)",
+		"type":		"text",
+		"default":	"",
+	}
 ]

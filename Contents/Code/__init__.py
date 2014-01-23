@@ -1,4 +1,4 @@
-import urllib2, base64, simplejson, time
+import urllib2, base64, simplejson, time, pyq
 json = simplejson
 
 # Static text. 
@@ -12,6 +12,12 @@ ICON_MAIN = 'main.png'
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
 debug_epg = False 
+debug_gn = False
+
+# Global variables.
+gn_thread = False
+gn_channels = False
+gn_channels_update = 0
 
 ####################################################################################################
 
@@ -20,6 +26,8 @@ def Start():
 	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
 	HTTP.CacheTime = 1
+
+	Thread.Create(gracenoteThread, globalize=True)
 
 ####################################################################################################
 
@@ -46,6 +54,75 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
+
+def ValidatePrefs():
+	if gn_thread == False and Prefs['gracenote_tvlogos'] == True:
+		Thread.Create(gracenoteThread, globalize=True)
+
+def gracenoteThread():
+	if debug == True: Log("******  Starting gracenote thread  ***********")
+	thread_sleep = 60
+	global gn_thread
+	global gn_channels
+	global gn_channels_update
+
+	gn_thread = True
+
+	# Cache TTL (seconds).
+	gn_channels_ttl = 300 
+
+	while (Prefs['gracenote_tvlogos'] == True):
+		if debug == True: Log.Info("gracenoteThread() loop...")
+
+		json_data = getTVHeadendJson('getChannelGrid', '')
+		json_services = getServices()
+		json_muxes = getMuxes()
+		dvbtriplets = []
+
+		# Fetch dvbids.
+		for channel in json_data['entries']:
+			# Get DVB ids.
+			dvbids = getDVBIDS(channel['services'], json_services, json_muxes)
+			dvbtriplets.append({"onid":dvbids['onid'], "tsid":dvbids['tsid'], "sid":dvbids['sid']})
+
+		try:
+			# Check if there's already a validated gracenote clientid/userid combination within data cache.
+			if not 'gracenote_userid' in Dict or not 'gracenote_clientid' in Dict:
+				if debug == True: Log("No valid gracenote clientid/userid combination found within data cache.")
+				Dict['gracenote_clientid'] = Prefs['gracenote_clientid']
+				Dict['gracenote_userid'] = pyq.register(Prefs['gracenote_clientid'])
+				if debug == True: Log("New combination: " + Dict['gracenote_clientid'] + " / " + Dict['gracenote_userid'])
+				Dict.Save()
+			else:
+				if Dict['gracenote_clientid'] != Prefs['gracenote_clientid']:
+					if debug == True: Log("Expired gracenote clientid/userid combination found within data cache.")
+					Dict['gracenote_clientid'] = Prefs['gracenote_clientid']
+					Dict['gracenote_userid'] = pyq.register(Prefs['gracenote_clientid'])
+					if debug == True: Log("New combination: " + Dict['gracenote_clientid'] + " / " + Dict['gracenote_userid'])
+					Dict.Save()
+				else:
+					# Try to fetch gracenote data.
+					# Only poll after ttl expires.
+					if time.time() > gn_channels_update + gn_channels_ttl:
+						if debug == True: Log("Gracenote channel TTL expired. Fetching channeldata from gracenote.")
+						gn_channels = pyq.lookupChannels(Dict['gracenote_clientid'], Dict['gracenote_userid'], "DVBIDS", dvbtriplets)
+						gn_channels_update = time.time()
+					else:
+						if debug == True: Log("Gracenote channel TTL not reached. Waiting for next poll.")
+					if debug_gn == True: Log(gn_channels)
+		except:
+			if debug == True: Log("Talking to gracenote service failed.")
+			gn_channels = False
+			gn_channels_update = 0
+			gn_epg = False
+
+		# Let the thread sleep for some seconds.
+		if debug == True: Log("****** Gracenote thread sleeping for " + str(thread_sleep) + " seconds ***********")
+		Thread.Sleep(float(thread_sleep))
+	if debug == True: Log("Exiting gracenote thread....")
+	gn_thread = False
+	gn_channels = False
+	gn_channels_update = 0
 
 def checkConfig():
 	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
@@ -82,7 +159,9 @@ def getTVHeadendJson(apirequest, arg1):
 	api = dict(
 		getChannelGrid='api/channel/grid?start=0&limit=999999',
 		getEpgGrid='api/epg/grid?start=0&limit=1000',
-		getIdNode='api/idnode/load?uuid=' + arg1
+		getIdNode='api/idnode/load?uuid=' + arg1,
+		getServiceGrid='api/mpegts/service/grid?start=0&limit=999999',
+		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999'
 	)
 
 	try:
@@ -110,7 +189,48 @@ def getEPG():
 
 	return json_data
 
-def getChannelInfo(uuid, json_epg):
+def getServices():
+	json_data = getTVHeadendJson('getServiceGrid','')
+	return json_data
+
+def getMuxes():
+	json_data = getTVHeadendJson('getMuxGrid','')
+	return json_data
+
+def getDVBIDS(chan_services, json_services, json_muxes):
+	result = {
+		'sid':'',
+		'onid':'',
+		'tsid':''
+	}
+
+	# Loop through given services.
+	for chan_service in chan_services:
+
+		# Loop through all fetched services.
+		for service in json_services['entries']:
+
+			# Check if the the given service of a channel is found within the servicelist.
+			if service['uuid'] == chan_service:
+
+				# Loop through all muxes.
+				for mux in json_muxes['entries']:
+
+					# Check if the network and name match for service. 
+					if mux['name'] == service['multiplex'] and mux['network'] == service['network']:
+						result['sid'] = str(service['sid'])
+						result['onid'] = str(mux['onid'])
+						result['tsid'] = str(mux['tsid'])
+	return result
+
+def getChannelLogoFromGracenote(channel):
+	if gn_channels != False:
+		for gn in gn_channels:
+			if gn['name'] == channel:
+				return gn['logo_url']
+	return False
+
+def getChannelInfo(uuid, services, json_epg):
 	result = {
 		'iconurl':'',
 		'epg_title':'',
@@ -118,7 +238,7 @@ def getChannelInfo(uuid, json_epg):
 		'epg_duration':0,
 		'epg_start':0,
 		'epg_stop':0,
-		'epg_summary':''
+		'epg_summary':'',
 	}
 
 	json_data = getTVHeadendJson('getIdNode', uuid)
@@ -181,10 +301,10 @@ def getChannels(title, tag=int(0)):
 				for tids in tags:
 					if (tag == int(tids)):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
-						chaninfo = getChannelInfo(channel['uuid'], json_epg)
+						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
 						channelList.add(createTVChannelObject(channel, chaninfo))
 			else:
-				chaninfo = getChannelInfo(channel['uuid'], json_epg)
+				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
 				channelList.add(createTVChannelObject(channel, chaninfo))
 	else:
 		if debug == True: Log("Could not create channellist! Showing error.")
@@ -195,20 +315,27 @@ def getChannels(title, tag=int(0)):
 
 def createTVChannelObject(channel, chaninfo, container = False):
 	name = channel['name'] 
+	icon = ""
 	if chaninfo['iconurl'] != "":
 		icon = chaninfo['iconurl']
-	else:
-		icon = ""
 	id = channel['uuid'] 
 	summary = ''
 	duration = 0
 
+	# Handle gracenote data.
+	gn_logo = getChannelLogoFromGracenote(name)
+	if gn_logo != False:
+		if debug == True: Log("Adding gracenote channel logo for channel: " + name)
+		icon = gn_logo 
+
 	# Add epg data. Otherwise leave the fields blank by default.
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
-		name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + "-" + chaninfo['epg_stop'] + ")"
-		duration = chaninfo['epg_duration'];
+		if container == False:
+			name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + ")"
+			summary = ""
 		if container == True:
-			summary = chaninfo['epg_description'] 
+			summary = chaninfo['epg_title'] + "\n" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + "\n\n" + chaninfo['epg_description'] 
+		duration = chaninfo['epg_duration']
 		#summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], chaninfo['epg_description'])
 
 	# Build streaming url.
