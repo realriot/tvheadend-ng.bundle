@@ -302,10 +302,10 @@ def getChannels(title, tag=int(0)):
 					if (tag == int(tids)):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
 						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
-						channelList.add(createTVChannelObject(channel, chaninfo))
+						channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
 			else:
 				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
-				channelList.add(createTVChannelObject(channel, chaninfo))
+				channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
 	else:
 		if debug == True: Log("Could not create channellist! Showing error.")
 		channelList.title1 = None;
@@ -313,7 +313,8 @@ def getChannels(title, tag=int(0)):
 		channelList.message = L('error_request_failed')
        	return channelList
 
-def createTVChannelObject(channel, chaninfo, container = False):
+def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
+	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
 	name = channel['name'] 
 	icon = ""
 	if chaninfo['iconurl'] != "":
@@ -346,7 +347,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
-		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, container = True),
+		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
 		rating_key = id,
 		title = name,
 		summary = summary,
@@ -355,7 +356,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Client.Product != "Plex Home Theater" and Client.Product != "PlexConnect" and Client.Product:
+	if cproduct != "Plex Home Theater" and cproduct != "PlexConnect":
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
@@ -429,11 +430,8 @@ def createTVChannelObject(channel, chaninfo, container = False):
 			if debug == True: Log("Creating MediaObject for newly muxed streaming")
 			if debug == True: Log("Providing Streaming-URL: " + url_base + id + '?mux=mpegts&transcode=1')
 
-	if debug == True:
-		if Client.Product:
-			Log("Created VideoObject for plex product: " + Client.Product + " on " + Client.Platform)
-		else:
-			Log("Could not determine plex product!")
+	if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
+
 	if container:
 		return ObjectContainer(objects = [vco])
 	else:
