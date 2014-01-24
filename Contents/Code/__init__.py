@@ -355,7 +355,7 @@ def createTVChannelObject(channel, chaninfo, container = False):
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Client.Product != "Plex Home Theater":
+	if Client.Product != "Plex Home Theater" and Client.Product != "PlexConnect" and Client.Product:
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
@@ -412,13 +412,22 @@ def createTVChannelObject(channel, chaninfo, container = False):
 			if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
 	else:
 		# Create mediaobjects for native streaming.
-		monat = MediaObject(
+		if Client.Product == "Plex Home Theater":
+			monat = MediaObject(
 				optimized_for_streaming = False,
 				parts = [PartObject(key = url_base + id)]
-		)
-		vco.add(monat)
-		if debug == True: Log("Creating MediaObject for native streaming")
-		if debug == True: Log("Providing Streaming-URL: " + url_base + id)
+			)
+			vco.add(monat)
+			if debug == True: Log("Creating MediaObject for native streaming")
+			if debug == True: Log("Providing Streaming-URL: " + url_base + id)
+		else:
+			monat = MediaObject(
+				optimized_for_streaming = False,
+				parts = [PartObject(key = url_base + id + '?mux=mpegts&transcode=1')]
+			)
+			vco.add(monat)
+			if debug == True: Log("Creating MediaObject for newly muxed streaming")
+			if debug == True: Log("Providing Streaming-URL: " + url_base + id + '?mux=mpegts&transcode=1')
 
 	if debug == True:
 		if Client.Product:
