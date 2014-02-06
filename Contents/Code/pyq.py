@@ -8,7 +8,8 @@ You will need a Gracenote client ID to use this module. See
 developer.gracenote.com for more info.
 """
 
-import xml.etree.ElementTree, urllib2, urllib, json, HTMLParser
+import xml.etree.ElementTree, urllib2, urllib, simplejson, HTMLParser
+json = simplejson
 
 htmlparser = HTMLParser.HTMLParser()
 
