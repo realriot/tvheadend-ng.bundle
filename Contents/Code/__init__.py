@@ -110,8 +110,8 @@ def gracenoteThread():
 					else:
 						if debug == True: Log("Gracenote channel TTL not reached. Waiting for next poll.")
 					if debug_gn == True: Log(gn_channels)
-		except:
-			if debug == True: Log("Talking to gracenote service failed.")
+		except Exception, e:
+			if debug == True: Log("Talking to gracenote service failed: " + str(e))
 			gn_channels = False
 			gn_channels_update = 0
 			gn_epg = False
@@ -148,8 +148,8 @@ def getTVHeadendJsonOld(what, url = False):
 		response = urllib2.urlopen(request)
 		json_tmp = response.read()
 		json_data = json.loads(json_tmp)
-	except:
-		if debug == True: Log("JSON-RequestOld failed!")
+	except Exception, e:
+		if debug == True: Log("JSON-RequestOld failed: " + str(e))
 		return False	
 	if debug == True: Log("JSON-RequestOld successfull!")
 	return json_data
@@ -172,8 +172,8 @@ def getTVHeadendJson(apirequest, arg1):
 
                 json_tmp = response.read()
                 json_data = json.loads(json_tmp)
-	except:
-		if debug == True: Log("JSON-Request failed!")
+	except Exception, e:
+		if debug == True: Log("JSON-Request failed: " + str(e))
 		return False
 	if debug == True: Log("JSON-Request successfull!")
 	return json_data
