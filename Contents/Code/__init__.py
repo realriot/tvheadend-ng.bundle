@@ -146,7 +146,7 @@ def getTVHeadendJsonOld(what, url = False):
 		request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], what),tvh_url[what])
 		request.add_header("Authorization", "Basic %s" % base64string)
 		response = urllib2.urlopen(request)
-		json_tmp = response.read()
+		json_tmp = response.read().decode('utf-8')
 		json_data = json.loads(json_tmp)
 	except Exception, e:
 		if debug == True: Log("JSON-RequestOld failed: " + str(e))
@@ -170,7 +170,7 @@ def getTVHeadendJson(apirequest, arg1):
                 request.add_header("Authorization", "Basic %s" % base64string)
                 response = urllib2.urlopen(request)
 
-                json_tmp = response.read()
+                json_tmp = response.read().decode('utf-8')
                 json_data = json.loads(json_tmp)
 	except Exception, e:
 		if debug == True: Log("JSON-Request failed: " + str(e))
