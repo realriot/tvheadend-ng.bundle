@@ -26,7 +26,7 @@
 	},
 	{
 		"id":           "tvheadend_native_default",
-		"label":        "Native streaming default",
+		"label":        "Native streaming by default",
 		"type":         "bool",
 		"default":      "true",
 	},

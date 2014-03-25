@@ -6,7 +6,11 @@ TEXT_NAME = 'TV-Headend Next Generation'
 TEXT_TITLE = 'TV-Headend' 
 
 # Image resources.
-ICON_MAIN = 'main.png'
+ICON_DEFAULT = 'icon-default.png'
+ART_DEFAULT = 'icon-default.png'
+
+ICON_ALLCHANS = R('icon_allchans.png')
+ICON_BOUQUETS = R('icon_bouquets.png')
 
 # Other definitions.
 PLUGIN_PREFIX = '/video/tvheadend-ng'
@@ -22,16 +26,12 @@ gn_channels_update = 0
 ####################################################################################################
 
 def Start():
-	Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, TEXT_NAME, ICON_MAIN)
-	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
-	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
 	HTTP.CacheTime = 1
-
 	Thread.Create(gracenoteThread, globalize=True)
 
 ####################################################################################################
 
-@handler('/video/tvheadend-ng', TEXT_TITLE, thumb=ICON_MAIN)
+@handler(PLUGIN_PREFIX, TEXT_TITLE, ICON_DEFAULT, ART_DEFAULT)
 def MainMenu():
 	oc = ObjectContainer(view_group='InfoList', no_cache=True)	
 
@@ -41,8 +41,8 @@ def MainMenu():
 		oc.header = None
 		oc.message = None 
 		oc = ObjectContainer(title1=TEXT_TITLE, no_cache=True)
-		oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans')))
-		oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans')))
+		oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans'), thumb=ICON_ALLCHANS))
+		oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans'), thumb=ICON_BOUQUETS))
 		oc.add(PrefsObject(title=L('preferences')))
 	else:
 		if debug == True: Log("Configuration error! Displaying error message...")
