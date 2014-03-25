@@ -12,12 +12,10 @@ ICON_MAIN = 'main.png'
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
 debug_epg = False 
-debug_gn = False
 
 # Global variables.
-gn_thread = False
 gn_channels = False
-gn_channels_update = 0
+gn_epg = False
 
 ####################################################################################################
 
@@ -55,23 +53,12 @@ def MainMenu():
 
 ####################################################################################################
 
-def ValidatePrefs():
-	if gn_thread == False and Prefs['gracenote_tvlogos'] == True:
-		Thread.Create(gracenoteThread, globalize=True)
-
 def gracenoteThread():
 	if debug == True: Log("******  Starting gracenote thread  ***********")
-	thread_sleep = 60
-	global gn_thread
 	global gn_channels
-	global gn_channels_update
+	global gn_epg
 
-	gn_thread = True
-
-	# Cache TTL (seconds).
-	gn_channels_ttl = 300 
-
-	while (Prefs['gracenote_tvlogos'] == True):
+	while (True):
 		if debug == True: Log.Info("gracenoteThread() loop...")
 
 		json_data = getTVHeadendJson('getChannelGrid', '')
@@ -102,27 +89,17 @@ def gracenoteThread():
 					Dict.Save()
 				else:
 					# Try to fetch gracenote data.
-					# Only poll after ttl expires.
-					if time.time() > gn_channels_update + gn_channels_ttl:
-						if debug == True: Log("Gracenote channel TTL expired. Fetching channeldata from gracenote.")
-						gn_channels = pyq.lookupChannels(Dict['gracenote_clientid'], Dict['gracenote_userid'], "DVBIDS", dvbtriplets)
-						gn_channels_update = time.time()
-					else:
-						if debug == True: Log("Gracenote channel TTL not reached. Waiting for next poll.")
-					if debug_gn == True: Log(gn_channels)
-		except Exception, e:
-			if debug == True: Log("Talking to gracenote service failed: " + str(e))
+					if debug == True: Log("Fetching channeldata from gracenote.")
+					gn_channels = pyq.lookupChannels(Dict['gracenote_clientid'], Dict['gracenote_userid'], "DVBIDS", dvbtriplets)
+					if debug == True: Log(gn_channels)
+		except:
+			if debug == True: Log("Talking to gracenote service failed.")
 			gn_channels = False
-			gn_channels_update = 0
 			gn_epg = False
 
-		# Let the thread sleep for some seconds.
-		if debug == True: Log("****** Gracenote thread sleeping for " + str(thread_sleep) + " seconds ***********")
-		Thread.Sleep(float(thread_sleep))
-	if debug == True: Log("Exiting gracenote thread....")
-	gn_thread = False
-	gn_channels = False
-	gn_channels_update = 0
+		# Sleep for 60 seconds
+		if debug == True: Log("****** Gracenote thread sleeping for 3600 seconds  ***********")
+		Thread.Sleep(float(3600))
 
 def checkConfig():
 	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
@@ -146,10 +123,10 @@ def getTVHeadendJsonOld(what, url = False):
 		request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], what),tvh_url[what])
 		request.add_header("Authorization", "Basic %s" % base64string)
 		response = urllib2.urlopen(request)
-		json_tmp = response.read().decode('utf-8')
+		json_tmp = response.read()
 		json_data = json.loads(json_tmp)
-	except Exception, e:
-		if debug == True: Log("JSON-RequestOld failed: " + str(e))
+	except:
+		if debug == True: Log("JSON-RequestOld failed!")
 		return False	
 	if debug == True: Log("JSON-RequestOld successfull!")
 	return json_data
@@ -170,10 +147,10 @@ def getTVHeadendJson(apirequest, arg1):
                 request.add_header("Authorization", "Basic %s" % base64string)
                 response = urllib2.urlopen(request)
 
-                json_tmp = response.read().decode('utf-8')
+                json_tmp = response.read()
                 json_data = json.loads(json_tmp)
-	except Exception, e:
-		if debug == True: Log("JSON-Request failed: " + str(e))
+	except:
+		if debug == True: Log("JSON-Request failed!")
 		return False
 	if debug == True: Log("JSON-Request successfull!")
 	return json_data
@@ -224,13 +201,12 @@ def getDVBIDS(chan_services, json_services, json_muxes):
 	return result
 
 def getChannelLogoFromGracenote(channel):
-	if gn_channels != False:
-		for gn in gn_channels:
-			if gn['name'] == channel:
-				return gn['logo_url']
+	for gn in gn_channels:
+		if gn['name'] == channel:
+			return gn['logo_url']
 	return False
 
-def getChannelInfo(uuid, services, json_epg):
+def getChannelInfo(uuid, services, json_epg, json_services, json_muxes):
 	result = {
 		'iconurl':'',
 		'epg_title':'',
@@ -289,7 +265,10 @@ def getChannelsByTag(title):
 def getChannels(title, tag=int(0)):
 	json_data = getTVHeadendJson('getChannelGrid', '')
 	json_epg = getEPG()
+	json_services = getServices()
+	json_muxes = getMuxes()
 	channelList = ObjectContainer(no_cache=True)
+	dvbtriplets = [] 
 
 	if json_data != False:
 		channelList.title1 = title
@@ -301,11 +280,11 @@ def getChannels(title, tag=int(0)):
 				for tids in tags:
 					if (tag == int(tids)):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
-						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
-						channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
+						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg, json_services, json_muxes)
+						channelList.add(createTVChannelObject(channel, chaninfo))
 			else:
-				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
-				channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
+				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg, json_services, json_muxes)
+				channelList.add(createTVChannelObject(channel, chaninfo))
 	else:
 		if debug == True: Log("Could not create channellist! Showing error.")
 		channelList.title1 = None;
@@ -313,8 +292,7 @@ def getChannels(title, tag=int(0)):
 		channelList.message = L('error_request_failed')
        	return channelList
 
-def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
-	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
+def createTVChannelObject(channel, chaninfo, container = False):
 	name = channel['name'] 
 	icon = ""
 	if chaninfo['iconurl'] != "":
@@ -326,7 +304,6 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	# Handle gracenote data.
 	gn_logo = getChannelLogoFromGracenote(name)
 	if gn_logo != False:
-		if debug == True: Log("Adding gracenote channel logo for channel: " + name)
 		icon = gn_logo 
 
 	# Add epg data. Otherwise leave the fields blank by default.
@@ -347,7 +324,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
-		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
+		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, container = True),
 		rating_key = id,
 		title = name,
 		summary = summary,
@@ -356,7 +333,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Prefs['tvheadend_native_default'] == False and cproduct != "Plex Home Theater" and cproduct != "PlexConnect":
+	if Client.Product and Client.Product != "Plex Home Theater":
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
@@ -413,26 +390,19 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 			if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
 	else:
 		# Create mediaobjects for native streaming.
-		if Client.Product == "Plex Home Theater":
-			monat = MediaObject(
+		monat = MediaObject(
 				optimized_for_streaming = False,
 				parts = [PartObject(key = url_base + id)]
-			)
-			vco.add(monat)
-			if debug == True: Log("Creating MediaObject for native streaming")
-			if debug == True: Log("Providing Streaming-URL: " + url_base + id)
+		)
+		vco.add(monat)
+		if debug == True: Log("Creating MediaObject for native streaming")
+		if debug == True: Log("Providing Streaming-URL: " + url_base + id)
+
+	if debug == True:
+		if Client.Product:
+			Log("Created VideoObject for plex product: " + Client.Product + " on " + Client.Platform)
 		else:
-			monat = MediaObject(
-				optimized_for_streaming = False,
-				parts = [PartObject(key = url_base + id + '?mux=mpegts&transcode=1')]
-			)
-			vco.add(monat)
-			if debug == True: Log("Creating MediaObject for newly muxed streaming")
-			if debug == True: Log("Providing Streaming-URL: " + url_base + id + '?mux=mpegts&transcode=1')
-
-	if cproduct != None and cplatform != None:
-		if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
-
+			Log("Could not determine plex product!")
 	if container:
 		return ObjectContainer(objects = [vco])
 	else:

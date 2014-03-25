@@ -110,8 +110,8 @@ def gracenoteThread():
 					else:
 						if debug == True: Log("Gracenote channel TTL not reached. Waiting for next poll.")
 					if debug_gn == True: Log(gn_channels)
-		except Exception, e:
-			if debug == True: Log("Talking to gracenote service failed: " + str(e))
+		except:
+			if debug == True: Log("Talking to gracenote service failed.")
 			gn_channels = False
 			gn_channels_update = 0
 			gn_epg = False
@@ -146,10 +146,10 @@ def getTVHeadendJsonOld(what, url = False):
 		request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], what),tvh_url[what])
 		request.add_header("Authorization", "Basic %s" % base64string)
 		response = urllib2.urlopen(request)
-		json_tmp = response.read().decode('utf-8')
+		json_tmp = response.read()
 		json_data = json.loads(json_tmp)
-	except Exception, e:
-		if debug == True: Log("JSON-RequestOld failed: " + str(e))
+	except:
+		if debug == True: Log("JSON-RequestOld failed!")
 		return False	
 	if debug == True: Log("JSON-RequestOld successfull!")
 	return json_data
@@ -170,10 +170,10 @@ def getTVHeadendJson(apirequest, arg1):
                 request.add_header("Authorization", "Basic %s" % base64string)
                 response = urllib2.urlopen(request)
 
-                json_tmp = response.read().decode('utf-8')
+                json_tmp = response.read()
                 json_data = json.loads(json_tmp)
-	except Exception, e:
-		if debug == True: Log("JSON-Request failed: " + str(e))
+	except:
+		if debug == True: Log("JSON-Request failed!")
 		return False
 	if debug == True: Log("JSON-Request successfull!")
 	return json_data
@@ -302,10 +302,10 @@ def getChannels(title, tag=int(0)):
 					if (tag == int(tids)):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
 						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
-						channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
+						channelList.add(createTVChannelObject(channel, chaninfo))
 			else:
 				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
-				channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
+				channelList.add(createTVChannelObject(channel, chaninfo))
 	else:
 		if debug == True: Log("Could not create channellist! Showing error.")
 		channelList.title1 = None;
@@ -313,7 +313,7 @@ def getChannels(title, tag=int(0)):
 		channelList.message = L('error_request_failed')
        	return channelList
 
-def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
+def createTVChannelObject(channel, chaninfo, container = False):
 	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
 	name = channel['name'] 
 	icon = ""
@@ -347,7 +347,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
-		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
+		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, container = True),
 		rating_key = id,
 		title = name,
 		summary = summary,
@@ -356,7 +356,8 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Prefs['tvheadend_native_default'] == False and cproduct != "Plex Home Theater" and cproduct != "PlexConnect":
+	pproduct = Client.Product
+	if pproduct != "Plex Home Theater" and pproduct != "PlexConnect":
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
@@ -430,9 +431,11 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 			if debug == True: Log("Creating MediaObject for newly muxed streaming")
 			if debug == True: Log("Providing Streaming-URL: " + url_base + id + '?mux=mpegts&transcode=1')
 
-	if cproduct != None and cplatform != None:
-		if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
-
+	if debug == True:
+		if Client.Product:
+			Log("Created VideoObject for plex product: " + Client.Product + " on " + Client.Platform)
+		else:
+			Log("Could not determine plex product!")
 	if container:
 		return ObjectContainer(objects = [vco])
 	else:

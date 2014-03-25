@@ -5,7 +5,6 @@
 		"type": 	"text",
 		"default": 	"", 
 	},
-	
 	{
 		"id": 		"tvheadend_pass",
 		"label": 	"Password",
@@ -13,19 +12,23 @@
 		"option": 	"hidden",
 		"default": 	"",
 	},
-	
 	{
 		"id": 		"tvheadend_host",
 		"label": 	"Hostname or Ipaddress",
 		"type": 	"text",
 		"default": 	"", 
 	},
-	
 	{
 		"id":		"tvheadend_web_port",
 		"label": 	"Web Port",
 		"type": 	"text",
 		"default": 	"9981", 
+	},
+	{
+		"id":           "tvheadend_native_default",
+		"label":        "Native streaming default",
+		"type":         "bool",
+		"default":      "true",
 	},
 	{
 		"id":		"gracenote_tvlogos",
