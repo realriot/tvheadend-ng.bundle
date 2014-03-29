@@ -7,7 +7,7 @@ TEXT_TITLE = 'TV-Headend'
 
 # Image resources.
 ICON_DEFAULT = 'icon-default.png'
-ART_DEFAULT = 'icon-default.png'
+ART_DEFAULT = 'art-default.jpg'
 
 ICON_ALLCHANS = R('icon_allchans.png')
 ICON_BOUQUETS = R('icon_bouquets.png')
@@ -26,6 +26,7 @@ gn_channels_update = 0
 ####################################################################################################
 
 def Start():
+	ObjectContainer.art = R(ART_DEFAULT)
 	HTTP.CacheTime = 1
 	Thread.Create(gracenoteThread, globalize=True)
 
@@ -33,7 +34,7 @@ def Start():
 
 @handler(PLUGIN_PREFIX, TEXT_TITLE, ICON_DEFAULT, ART_DEFAULT)
 def MainMenu():
-	oc = ObjectContainer(view_group='InfoList', no_cache=True)	
+	oc = ObjectContainer(no_cache=True)	
 
 	if checkConfig():
 		if debug == True: Log("Configuration OK!")
