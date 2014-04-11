@@ -138,7 +138,7 @@ def checkConfig():
 
 def getTVHeadendJsonOld(what, url = False):
 	if debug == True: Log("JSON-RequestOld: " + what)
-	tvh_url = dict( channeltags='op=listTags', epg='start=0&limit=300')
+	tvh_url = dict( channeltags='op=listTags', epg='start=0&limit=999999')
 	if url != False: 
 		tvh_url[what] = url
 
@@ -187,7 +187,6 @@ def getEPG():
 		if debug_epg == True: Log("Got EPG: " + json.dumps(json_data))
 	else:
 		if debug_epg == True: Log("Failed to fetch EPG!")	
-
 	return json_data
 
 def getServices():
@@ -357,7 +356,9 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	)
 
 	# Decide if we have to stream for Plex Home Theatre or devices with H264/AAC support. 
-	if Prefs['tvheadend_native_default'] == False and cproduct != "Plex Home Theater" and cproduct != "PlexConnect":
+	if cplatform == "iOS" or cplatform == "Android" or \
+		(Prefs['tvheadend_native_default'] == False and cproduct != "Plex Home Theater" and cproduct != "PlexConnect"):
+		if debug == True: Log("Content has to be transcoded/remuxed for client")
 		# Create media object for a 576px resolution.
 		mo384 = MediaObject(
 			container = 'mpegts',
@@ -414,7 +415,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 			if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
 	else:
 		# Create mediaobjects for native streaming.
-		if Client.Product == "Plex Home Theater":
+		if cproduct == "Plex Home Theater" or cproduct == "PlexConnect":
 			monat = MediaObject(
 				optimized_for_streaming = False,
 				parts = [PartObject(key = url_base + id)]
@@ -428,11 +429,13 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 				parts = [PartObject(key = url_base + id + '?mux=mpegts&transcode=1')]
 			)
 			vco.add(monat)
-			if debug == True: Log("Creating MediaObject for newly muxed streaming")
+			if debug == True: Log("Creating MediaObject for remuxed streaming")
 			if debug == True: Log("Providing Streaming-URL: " + url_base + id + '?mux=mpegts&transcode=1')
 
 	if cproduct != None and cplatform != None:
 		if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
+	else:
+		if debug == True: Log("Created VideoObject for plex product: UNDEFINED")
 
 	if container:
 		return ObjectContainer(objects = [vco])
