@@ -9,3 +9,6 @@ This is a fork of the already existing bundle from [https://github.com/moxz/tvhe
 * Within the first step and releases there will not be any recording support.
 
 ''The TV-Headend channel icon is a mockup of the [https://tvheadend.org TV-Headend] and [http://plexapp.com Plex] logo. This Icon was created by [https://github.com/moxz/tvheadend.bundle moxz].''
+
+=== Latest notes ===
+* Use the preferences options '''Force remuxed streaming''' if you have problems with transcoding and multi resolutions. The disadvantage is that it cannot be guaranteed that the format/codec will be compatible with your device.
