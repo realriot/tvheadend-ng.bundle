@@ -449,7 +449,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 		vco = addMultiResMediaObjects(vco, vurl, channel['name'])
 		stream_defined = True
 
-	if stream_defined == False and Prefs['tvheadend_native_default'] == False:
+	if stream_defined == False and Prefs['tvheadend_force_remuxed'] == False:
 		vco = addMultiResMediaObjects(vco, vurl, channel['name'])
 		stream_defined = True
 
