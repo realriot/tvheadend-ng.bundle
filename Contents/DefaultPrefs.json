@@ -25,8 +25,8 @@
 		"default": 	"9981", 
 	},
 	{
-		"id":           "tvheadend_native_default",
-		"label":        "Native streaming by default",
+		"id":           "tvheadend_force_remuxed",
+		"label":        "Force remuxed streaming",
 		"type":         "bool",
 		"default":      "true",
 	},
