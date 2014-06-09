@@ -1,0 +1,11 @@
+{
+  "attention": "Attention",
+  "error": "Erreur",
+  "error_no_config": "Erreur de configuration. Vérifiez-vous les paramètres des canaux.",
+  "error_request_failed": "La demande n'a pas réussie! Vérifiez-vous les paramètres des canaux et l'état de TVheadend.",
+  "error_no_tags": "Ajoutez-vous des tags dans TVheadend, autrement c'est pas possible d'avoir des collections.",
+  "error_gracenote_missing_clientid": "Support de Gracenote est activé, mais vous avez pas donné un numéro de client.",
+  "allchans": "Tous les canaux",
+  "tagchans": "Collections",
+  "preferences": "Paramètres"
+}

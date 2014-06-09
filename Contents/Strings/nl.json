@@ -1,0 +1,11 @@
+{
+  "attention": "Aandacht",
+  "error": "Error",
+  "error_no_config": "Configuratie error. Gelieve de kanaalinstellingen na te kijken.",
+  "error_request_failed": "Verzoek is niet gelukt! Gelieve kanaalinstellingen en TVheadend status te controleren.",
+  "error_no_tags": "Gelieve tags in TVheadend toe te voegen, anders zijn verzamelingen niet mogelijk.",
+  "error_gracenote_missing_clientid": "Gracenote support is geactiveerd, maar geen klant-id gegeven.",
+  "allchans": "Alle kanalen",
+  "tagchans": "Verzamelingen",
+  "preferences": "Instellingen"
+}
