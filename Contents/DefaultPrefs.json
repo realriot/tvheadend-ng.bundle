@@ -31,6 +31,12 @@
 		"default":      "true",
 	},
 	{
+		"id":           "tvheadend_newtagapi",
+		"label":        "Use new tag api",
+		"type":         "bool",
+		"default":      "true",
+	},
+	{
 		"id":		"gracenote_tvlogos",
 		"label":	"Gracenote channel logos",
 		"type":		"bool",

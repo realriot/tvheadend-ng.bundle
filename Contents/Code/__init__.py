@@ -128,7 +128,11 @@ def gracenoteThread():
 def checkConfig():
 	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
 		# To validate the tvheadend connection, the function to fetch the channeltags will be used.
-		json_data = getTVHeadendJsonOld('channeltags')
+		if Prefs['tvheadend_newtagapi'] != "":
+			json_data = getTVHeadendJson('getChannelTags', '')
+		else:
+			json_data = getTVHeadendJsonOld('channeltags')
+
 		if json_data != False:
 			return True
 		else:
@@ -162,7 +166,8 @@ def getTVHeadendJson(apirequest, arg1):
 		getEpgGrid='api/epg/grid?start=0&limit=1000',
 		getIdNode='api/idnode/load?uuid=' + arg1,
 		getServiceGrid='api/mpegts/service/grid?start=0&limit=999999',
-		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999'
+		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999',
+		getChannelTags='api/channeltag/grid?start=0&limit=999999'
 	)
 
 	try:
@@ -264,7 +269,11 @@ def getChannelInfo(uuid, services, json_epg):
 ####################################################################################################
 
 def getChannelsByTag(title):
-	json_data = getTVHeadendJsonOld('channeltags')
+	if Prefs['tvheadend_newtagapi'] != "":
+		json_data = getTVHeadendJson('getChannelTags', '')
+	else:
+		json_data = getTVHeadendJsonOld('channeltags')
+
 	tagList = ObjectContainer(no_cache=True)
 
 	if json_data != False:
@@ -273,7 +282,10 @@ def getChannelsByTag(title):
 		tagList.message = None
 		for tag in sorted(json_data['entries'], key=lambda t: t['name']):
 			if debug == True: Log("Getting channellist for tag: " + tag['name'])
-			tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
+			if Prefs['tvheadend_newtagapi'] != "":
+				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=tag['uuid']), title=tag['name']))
+			else:
+				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
 	else:
 		if debug == True: Log("Could not create tagelist! Showing error.")
 		tagList.title1 = None
@@ -299,7 +311,10 @@ def getChannels(title, tag=int(0)):
 			if tag > 0:
 				tags = channel['tags']
 				for tids in tags:
-					if (tag == int(tids)):
+					if Prefs['tvheadend_newtagapi'] == "":	
+						tids = int(tids)
+					
+					if (tag == tids):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
 						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
 						channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
