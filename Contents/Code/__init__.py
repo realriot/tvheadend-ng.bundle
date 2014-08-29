@@ -128,7 +128,7 @@ def gracenoteThread():
 def checkConfig():
 	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
 		# To validate the tvheadend connection, the function to fetch the channeltags will be used.
-		if Prefs['tvheadend_newtagapi'] != "":
+		if Prefs['tvheadend_newtagapi'] != False:
 			json_data = getTVHeadendJson('getChannelTags', '')
 		else:
 			json_data = getTVHeadendJsonOld('channeltags')
@@ -269,7 +269,7 @@ def getChannelInfo(uuid, services, json_epg):
 ####################################################################################################
 
 def getChannelsByTag(title):
-	if Prefs['tvheadend_newtagapi'] != "":
+	if Prefs['tvheadend_newtagapi'] != False:
 		json_data = getTVHeadendJson('getChannelTags', '')
 	else:
 		json_data = getTVHeadendJsonOld('channeltags')
@@ -282,7 +282,7 @@ def getChannelsByTag(title):
 		tagList.message = None
 		for tag in sorted(json_data['entries'], key=lambda t: t['name']):
 			if debug == True: Log("Getting channellist for tag: " + tag['name'])
-			if Prefs['tvheadend_newtagapi'] != "":
+			if Prefs['tvheadend_newtagapi'] != False:
 				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=tag['uuid']), title=tag['name']))
 			else:
 				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
@@ -311,7 +311,7 @@ def getChannels(title, tag=int(0)):
 			if tag > 0:
 				tags = channel['tags']
 				for tids in tags:
-					if Prefs['tvheadend_newtagapi'] == "":	
+					if Prefs['tvheadend_newtagapi'] == False:
 						tids = int(tids)
 					
 					if (tag == tids):
