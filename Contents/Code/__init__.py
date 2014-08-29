@@ -42,8 +42,10 @@ def MainMenu():
 		oc.header = None
 		oc.message = None 
 		oc = ObjectContainer(title1=TEXT_TITLE, no_cache=True)
-		oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans'), thumb=ICON_ALLCHANS))
-		oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans'), thumb=ICON_BOUQUETS))
+		if Prefs['tvheadend_allchans'] != False:
+			oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans'), thumb=ICON_ALLCHANS))
+		if Prefs['tvheadend_tagchans'] != False:
+			oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans'), thumb=ICON_BOUQUETS))
 		oc.add(PrefsObject(title=L('preferences')))
 	else:
 		if debug == True: Log("Configuration error! Displaying error message...")
