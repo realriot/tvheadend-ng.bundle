@@ -31,6 +31,24 @@
 		"default":      "true",
 	},
 	{
+		"id":           "tvheadend_newtagapi",
+		"label":        "Use new tag api",
+		"type":         "bool",
+		"default":      "true",
+	},
+	{
+		"id":           "tvheadend_allchans",
+		"label":        "Activate all channel view",
+		"type":         "bool",
+		"default":      "true",
+	},
+	{
+		"id":           "tvheadend_tagchans",
+		"label":        "Activate bouquet view",
+		"type":         "bool",
+		"default":      "true",
+	},
+	{
 		"id":		"gracenote_tvlogos",
 		"label":	"Gracenote channel logos",
 		"type":		"bool",
