@@ -17,6 +17,7 @@ PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
 debug_epg = False 
 debug_gn = False
+req_api_version = 15
 
 # Global variables.
 gn_thread = False
@@ -36,7 +37,8 @@ def Start():
 def MainMenu():
 	oc = ObjectContainer(no_cache=True)	
 
-	if checkConfig():
+	result = checkConfig()
+	if result['status'] == True:
 		if debug == True: Log("Configuration OK!")
 		oc.title1 = TEXT_TITLE
 		oc.header = None
@@ -48,10 +50,10 @@ def MainMenu():
 			oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans'), thumb=ICON_BOUQUETS))
 		oc.add(PrefsObject(title=L('preferences')))
 	else:
-		if debug == True: Log("Configuration error! Displaying error message...")
+		if debug == True: Log("Configuration error! Displaying error message: " + result['message'])
 		oc.title1 = None
 		oc.header = L('header_attention')
-                oc.message = L('error_no_config')
+                oc.message = result['message']
 		oc.add(PrefsObject(title=L('preferences')))
 
 	return oc
@@ -128,19 +130,32 @@ def gracenoteThread():
 	gn_channels_update = 0
 
 def checkConfig():
-	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
-		# To validate the tvheadend connection, the function to fetch the channeltags will be used.
-		if Prefs['tvheadend_newtagapi'] != False:
-			json_data = getTVHeadendJson('getChannelTags', '')
-		else:
-			json_data = getTVHeadendJsonOld('channeltags')
+	global req_api_version
+	result = {
+		'status':False,
+		'message':''
+	}
 
+	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
+		# To validate the tvheadend connection and api version.
+		json_data = getTVHeadendJson('getServerVersion', '')
 		if json_data != False:
-			return True
+			if json_data['api_version'] == req_api_version:
+				result['status'] = True
+				result['message'] = ''
+				return result
+			else:
+				result['status'] = False
+				result['message'] = L('error_api_version')
+				return result
 		else:
-			return False
+			result['status'] = False
+			result['message'] = L('error_unknown')
+			return result
 	else:
-		return False
+		result['status'] = False
+		result['message'] = L('error_connection')
+		return result
 
 def getTVHeadendJsonOld(what, url = False):
 	if debug == True: Log("JSON-RequestOld: " + what)
@@ -169,7 +184,8 @@ def getTVHeadendJson(apirequest, arg1):
 		getIdNode='api/idnode/load?uuid=' + arg1,
 		getServiceGrid='api/mpegts/service/grid?start=0&limit=999999',
 		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999',
-		getChannelTags='api/channeltag/grid?start=0&limit=999999'
+		getChannelTags='api/channeltag/grid?start=0&limit=999999',
+		getServerVersion='api/serverinfo'
 	)
 
 	try:
