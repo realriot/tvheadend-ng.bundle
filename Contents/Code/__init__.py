@@ -157,25 +157,6 @@ def checkConfig():
 		result['message'] = L('error_connection')
 		return result
 
-def getTVHeadendJsonOld(what, url = False):
-	if debug == True: Log("JSON-RequestOld: " + what)
-	tvh_url = dict( channeltags='op=listTags', epg='start=0&limit=999999')
-	if url != False: 
-		tvh_url[what] = url
-
-	try:
-		base64string = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
-		request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], what),tvh_url[what])
-		request.add_header("Authorization", "Basic %s" % base64string)
-		response = urllib2.urlopen(request)
-		json_tmp = response.read().decode('utf-8')
-		json_data = json.loads(json_tmp)
-	except Exception, e:
-		if debug == True: Log("JSON-RequestOld failed: " + str(e))
-		return False	
-	if debug == True: Log("JSON-RequestOld successfull!")
-	return json_data
-
 def getTVHeadendJson(apirequest, arg1):
 	if debug == True: Log("JSON-Request: " + apirequest)
 	api = dict(
@@ -287,11 +268,7 @@ def getChannelInfo(uuid, services, json_epg):
 ####################################################################################################
 
 def getChannelsByTag(title):
-	if Prefs['tvheadend_newtagapi'] != False:
-		json_data = getTVHeadendJson('getChannelTags', '')
-	else:
-		json_data = getTVHeadendJsonOld('channeltags')
-
+	json_data = getTVHeadendJson('getChannelTags', '')
 	tagList = ObjectContainer(no_cache=True)
 
 	if json_data != False:
@@ -300,10 +277,7 @@ def getChannelsByTag(title):
 		tagList.message = None
 		for tag in sorted(json_data['entries'], key=lambda t: t['name']):
 			if debug == True: Log("Getting channellist for tag: " + tag['name'])
-			if Prefs['tvheadend_newtagapi'] != False:
-				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=tag['uuid']), title=tag['name']))
-			else:
-				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=int(tag['identifier'])), title=tag['name']))
+			tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=tag['uuid']), title=tag['name']))
 	else:
 		if debug == True: Log("Could not create tagelist! Showing error.")
 		tagList.title1 = None
@@ -329,9 +303,6 @@ def getChannels(title, tag=int(0)):
 			if tag > 0:
 				tags = channel['tags']
 				for tids in tags:
-					if Prefs['tvheadend_newtagapi'] == False:
-						tids = int(tids)
-					
 					if (tag == tids):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
 						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
