@@ -19,17 +19,11 @@ debug_epg = False
 debug_gn = False
 req_api_version = 15
 
-# Global variables.
-gn_thread = False
-gn_channels = False
-gn_channels_update = 0
-
 ####################################################################################################
 
 def Start():
 	ObjectContainer.art = R(ART_DEFAULT)
 	HTTP.CacheTime = 1
-	Thread.Create(gracenoteThread, globalize=True)
 
 ####################################################################################################
 
@@ -61,73 +55,6 @@ def MainMenu():
 ####################################################################################################
 
 def ValidatePrefs():
-	if gn_thread == False and Prefs['gracenote_tvlogos'] == True:
-		Thread.Create(gracenoteThread, globalize=True)
-
-def gracenoteThread():
-	if debug == True: Log("******  Starting gracenote thread  ***********")
-	thread_sleep = 60
-	global gn_thread
-	global gn_channels
-	global gn_channels_update
-
-	gn_thread = True
-
-	# Cache TTL (seconds).
-	gn_channels_ttl = 300 
-
-	while (Prefs['gracenote_tvlogos'] == True):
-		if debug == True: Log.Info("gracenoteThread() loop...")
-
-		json_data = getTVHeadendJson('getChannelGrid', '')
-		json_services = getServices()
-		json_muxes = getMuxes()
-		dvbtriplets = []
-
-		# Fetch dvbids.
-		for channel in json_data['entries']:
-			# Get DVB ids.
-			dvbids = getDVBIDS(channel['services'], json_services, json_muxes)
-			dvbtriplets.append({"onid":dvbids['onid'], "tsid":dvbids['tsid'], "sid":dvbids['sid']})
-
-		try:
-			# Check if there's already a validated gracenote clientid/userid combination within data cache.
-			if not 'gracenote_userid' in Dict or not 'gracenote_clientid' in Dict:
-				if debug == True: Log("No valid gracenote clientid/userid combination found within data cache.")
-				Dict['gracenote_clientid'] = Prefs['gracenote_clientid']
-				Dict['gracenote_userid'] = pyq.register(Prefs['gracenote_clientid'])
-				if debug == True: Log("New combination: " + Dict['gracenote_clientid'] + " / " + Dict['gracenote_userid'])
-				Dict.Save()
-			else:
-				if Dict['gracenote_clientid'] != Prefs['gracenote_clientid']:
-					if debug == True: Log("Expired gracenote clientid/userid combination found within data cache.")
-					Dict['gracenote_clientid'] = Prefs['gracenote_clientid']
-					Dict['gracenote_userid'] = pyq.register(Prefs['gracenote_clientid'])
-					if debug == True: Log("New combination: " + Dict['gracenote_clientid'] + " / " + Dict['gracenote_userid'])
-					Dict.Save()
-				else:
-					# Try to fetch gracenote data.
-					# Only poll after ttl expires.
-					if time.time() > gn_channels_update + gn_channels_ttl:
-						if debug == True: Log("Gracenote channel TTL expired. Fetching channeldata from gracenote.")
-						gn_channels = pyq.lookupChannels(Dict['gracenote_clientid'], Dict['gracenote_userid'], "DVBIDS", dvbtriplets)
-						gn_channels_update = time.time()
-					else:
-						if debug == True: Log("Gracenote channel TTL not reached. Waiting for next poll.")
-					if debug_gn == True: Log(gn_channels)
-		except Exception, e:
-			if debug == True: Log("Talking to gracenote service failed: " + str(e))
-			gn_channels = False
-			gn_channels_update = 0
-			gn_epg = False
-
-		# Let the thread sleep for some seconds.
-		if debug == True: Log("****** Gracenote thread sleeping for " + str(thread_sleep) + " seconds ***********")
-		Thread.Sleep(float(thread_sleep))
-	if debug == True: Log("Exiting gracenote thread....")
-	gn_thread = False
-	gn_channels = False
-	gn_channels_update = 0
 
 def checkConfig():
 	global req_api_version
@@ -192,47 +119,6 @@ def getEPG():
 	else:
 		if debug_epg == True: Log("Failed to fetch EPG!")	
 	return json_data
-
-def getServices():
-	json_data = getTVHeadendJson('getServiceGrid','')
-	return json_data
-
-def getMuxes():
-	json_data = getTVHeadendJson('getMuxGrid','')
-	return json_data
-
-def getDVBIDS(chan_services, json_services, json_muxes):
-	result = {
-		'sid':'',
-		'onid':'',
-		'tsid':''
-	}
-
-	# Loop through given services.
-	for chan_service in chan_services:
-
-		# Loop through all fetched services.
-		for service in json_services['entries']:
-
-			# Check if the the given service of a channel is found within the servicelist.
-			if service['uuid'] == chan_service:
-
-				# Loop through all muxes.
-				for mux in json_muxes['entries']:
-
-					# Check if the network and name match for service. 
-					if mux['name'] == service['multiplex'] and mux['network'] == service['network']:
-						result['sid'] = str(service['sid'])
-						result['onid'] = str(mux['onid'])
-						result['tsid'] = str(mux['tsid'])
-	return result
-
-def getChannelLogoFromGracenote(channel):
-	if gn_channels != False:
-		for gn in gn_channels:
-			if gn['name'] == channel:
-				return gn['logo_url']
-	return False
 
 def getChannelInfo(uuid, services, json_epg):
 	result = {
@@ -406,12 +292,6 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	id = channel['uuid'] 
 	summary = ''
 	duration = 0
-
-	# Handle gracenote data.
-	gn_logo = getChannelLogoFromGracenote(name)
-	if gn_logo != False:
-		if debug == True: Log("Adding gracenote channel logo for channel: " + name)
-		icon = gn_logo 
 
 	# Add epg data. Otherwise leave the fields blank by default.
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
