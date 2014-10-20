@@ -1,4 +1,4 @@
-import urllib2, base64, simplejson, time, pyq
+import urllib2, base64, simplejson, time
 json = simplejson
 
 # Static text. 
@@ -208,8 +208,8 @@ def addMultiResMediaObjects(vco, vurl, channelname):
 	# Create media object for a 576px resolution.
 	mo384 = MediaObject(
 		container = 'mpegts',
-		video_codec = VideoCodec.H264,
-		audio_codec = AudioCodec.AAC,
+#		video_codec = VideoCodec.H264,
+#		audio_codec = AudioCodec.AAC,
 		audio_channels = 2,
 		optimized_for_streaming = False,
 		video_resolution = 384,
@@ -222,8 +222,8 @@ def addMultiResMediaObjects(vco, vurl, channelname):
 	# Create media object for a 576px resolution.
 	mo576 = MediaObject(
 		container = 'mpegts',
-		video_codec = VideoCodec.H264,
-		audio_codec = AudioCodec.AAC,
+#		video_codec = VideoCodec.H264,
+#		audio_codec = AudioCodec.AAC,
 		audio_channels = 2,
 		optimized_for_streaming = False,
 		video_resolution = 576,
@@ -237,8 +237,8 @@ def addMultiResMediaObjects(vco, vurl, channelname):
 	if channelname.endswith('HD'):
 		mo768 = MediaObject(
 			container = 'mpegts',
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
+#			video_codec = VideoCodec.H264,
+#			audio_codec = AudioCodec.AAC,
 			audio_channels = 2,
 			optimized_for_streaming = False,
 			video_resolution = 768,
@@ -246,8 +246,8 @@ def addMultiResMediaObjects(vco, vurl, channelname):
 		)
 		mo1080 = MediaObject(
 			container = 'mpegts',
-			video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
+#			video_codec = VideoCodec.H264,
+#			audio_codec = AudioCodec.AAC,
 			audio_channels = 2,
 			optimized_for_streaming = False,
 			video_resolution = 1080,
