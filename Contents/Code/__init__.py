@@ -54,8 +54,6 @@ def MainMenu():
 
 ####################################################################################################
 
-def ValidatePrefs():
-
 def checkConfig():
 	global req_api_version
 	result = {
