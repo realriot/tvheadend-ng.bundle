@@ -16,7 +16,6 @@ ICON_BOUQUETS = R('icon_bouquets.png')
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
 debug_epg = False 
-debug_gn = False
 req_api_version = 15
 
 ####################################################################################################
@@ -86,7 +85,7 @@ def getTVHeadendJson(apirequest, arg1):
 	if debug == True: Log("JSON-Request: " + apirequest)
 	api = dict(
 		getChannelGrid='api/channel/grid?start=0&limit=999999',
-		getEpgGrid='api/epg/grid?start=0&limit=1000',
+		getEpgGrid='api/epg/events/grid?start=0&limit=1000',
 		getIdNode='api/idnode/load?uuid=' + arg1,
 		getServiceGrid='api/mpegts/service/grid?start=0&limit=999999',
 		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999',
@@ -134,19 +133,19 @@ def getChannelInfo(uuid, services, json_epg):
 		result['iconurl'] = json_data['entries'][0]['params'][2].get('value')
 
 	# Check if we have data within the json_epg object.
-	if json_epg != False and json_epg.get('events'):
-		for epg in json_epg['events']:
+	if json_epg != False and json_epg.get('entries'):
+		for epg in json_epg['entries']:
 			if epg['channelUuid'] == uuid and time.time() > int(epg['start']) and time.time() < int(epg['stop']):
 				if epg.get('title'):
 					 result['epg_title'] = epg['title'];
 				if epg.get('description'):
 					 result['epg_description'] = epg['description'];
-				if epg.get('duration'):
-					result['epg_duration'] = epg['duration']*1000;
 				if epg.get('start'):
 					result['epg_start'] = time.strftime("%H:%M", time.localtime(int(epg['start'])));
 				if epg.get('stop'):
 					result['epg_stop'] = time.strftime("%H:%M", time.localtime(int(epg['stop'])));
+				if epg.get('start') and epg.get('stop'):
+					result['epg_duration'] = (epg.get('stop')-epg.get('start'))*1000;
 	return result
 
 ####################################################################################################
@@ -203,82 +202,19 @@ def getChannels(title, tag=int(0)):
 
 ####################################################################################################
 
-def addMultiResMediaObjects(vco, vurl, channelname):
-	if debug == True: Log("Content will be transcoded/remuxed for client")
-	# Create media object for a 576px resolution.
-	mo384 = MediaObject(
-		container = 'mpegts',
-#		video_codec = VideoCodec.H264,
-#		audio_codec = AudioCodec.AAC,
-		audio_channels = 2,
-		optimized_for_streaming = False,
-		video_resolution = 384,
-		parts = [PartObject(key = vurl + "&resolution=384")]
-	)
-	vco.add(mo384)
-	if debug == True: Log("Creating MediaObject with vertical resolution: 384")
-	if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=384")
+def PlayVideo(url):
+	return Redirect(url)
 
-	# Create media object for a 576px resolution.
-	mo576 = MediaObject(
-		container = 'mpegts',
-#		video_codec = VideoCodec.H264,
-#		audio_codec = AudioCodec.AAC,
-		audio_channels = 2,
-		optimized_for_streaming = False,
-		video_resolution = 576,
-		parts = [PartObject(key = vurl + "&resolution=576")]
-	)
-	vco.add(mo576)
-	if debug == True: Log("Creating MediaObject with vertical resolution: 576")
-	if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=576")
-
-	# Create mediaobjects for hd tv-channels.
-	if channelname.endswith('HD'):
-		mo768 = MediaObject(
-			container = 'mpegts',
-#			video_codec = VideoCodec.H264,
-#			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
-			optimized_for_streaming = False,
-			video_resolution = 768,
-			parts = [PartObject(key = vurl + "&resolution=768")]
+def addMediaObject(vco, vurl):
+	media = MediaObject(
+			optimized_for_streaming = True,
+			#parts = [PartObject(key = vurl)],
+			parts = [PartObject(key = Callback(PlayVideo, url=vurl))],
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
 		)
-		mo1080 = MediaObject(
-			container = 'mpegts',
-#			video_codec = VideoCodec.H264,
-#			audio_codec = AudioCodec.AAC,
-			audio_channels = 2,
-			optimized_for_streaming = False,
-			video_resolution = 1080,
-			parts = [PartObject(key = vurl)]
-		)
-		vco.add(mo768)
-		if debug == True: Log("Creating MediaObject with vertical resolution: 768")
-		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=768")
-		vco.add(mo1080)
-		if debug == True: Log("Creating MediaObject with vertical resolution: 1080")
-		if debug == True: Log("Providing Streaming-URL: " + vurl + "&resolution=1080")
-	return vco
-
-def addRemuxedMediaObjects(vco, vurl):
-	monat = MediaObject(
-			optimized_for_streaming = False,
-			parts = [PartObject(key = vurl)]
-		)
-	vco.add(monat)
-	if debug == True: Log("Creating MediaObject for remuxed streaming")
-	if debug == True: Log("Providing Streaming-URL: " + vurl)
-	return vco
-
-def addNativeMediaObjects(vco, vurl):
-	monat = MediaObject(
-			optimized_for_streaming = False,
-			parts = [PartObject(key = vurl)]
-		)
-	vco.add(monat)
-	if debug == True: Log("Creating MediaObject for native streaming")
-	if debug == True: Log("Providing Streaming-URL: " + vurl)
+	vco.add(media)
+	if debug == True: Log("Creating MediaObject for streaming with URL: " + vurl)
 	return vco
 
 def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
@@ -292,6 +228,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	duration = 0
 
 	# Add epg data. Otherwise leave the fields blank by default.
+	if debug == True: Log("Info for mediaobject: " + str(chaninfo))
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
 		if container == False:
 			name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + ")"
@@ -304,8 +241,6 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	# Build streaming url.
 	url_structure = 'stream/channel'
 	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
-	url_transcode = '?mux=mpegts&acodec=aac&vcodec=H264&transcode=1'
-	vurl = url_base + id + url_transcode
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
@@ -314,25 +249,33 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 		title = name,
 		summary = summary,
 		duration = duration,
-		thumb = icon,
+#		thumb = icon,
 	)
 
 	stream_defined = False
 	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
-	if stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect"):
-		vco = addNativeMediaObjects(vco, url_base + id) 
+	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
+		vco = addMediaObject(vco, url_base + id + '?profile=pass')
 		stream_defined = True
 
-	if stream_defined == False and Prefs['tvheadend_force_remuxed'] == True:
-		vco = addRemuxedMediaObjects(vco, url_base + id + '?mux=mpegts&transcode=1')
+	# Custom streaming profile for iOS.
+	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
+		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_ios'])
 		stream_defined = True
 
-	if stream_defined == False and (cplatform == "iOS" or cplatform == "Android"):
-		vco = addMultiResMediaObjects(vco, vurl, channel['name'])
+        # Custom streaming profile for Android.
+	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
+		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_android'])
 		stream_defined = True
 
-	if stream_defined == False and Prefs['tvheadend_force_remuxed'] == False:
-		vco = addMultiResMediaObjects(vco, vurl, channel['name'])
+        # Custom default streaming.
+	if stream_defined == False and (Prefs['tvheadend_custprof_default']):
+		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_default'])
+		stream_defined = True
+
+	# Default streaming.
+	if stream_defined == False:
+		vco = addMediaObject(vco, url_base + id)
 		stream_defined = True
 
 	# Log the product and platform which requested a stream.

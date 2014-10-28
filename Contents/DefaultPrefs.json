@@ -24,11 +24,29 @@
 		"type": 	"text",
 		"default": 	"9981", 
 	},
+        {
+		"id":		"tvheadend_mpegts_passthrough",
+		"label":	"MPEG-TS Pass-Through",
+		"type":		"bool",
+		"default":	"true",
+        },
 	{
-		"id":           "tvheadend_force_remuxed",
-		"label":        "Force remuxed streaming",
-		"type":         "bool",
-		"default":      "true",
+		"id":		"tvheadend_custprof_default",
+		"label":	"Custom default profile",
+		"type":		"text",
+		"default":	"",
+	},
+	{
+		"id":           "tvheadend_custprof_ios",
+		"label":        "Custom iOS profile",
+		"type":         "text",
+		"default":      "",
+	},
+	{
+		"id":           "tvheadend_custprof_android",
+		"label":        "Custom Android profile",
+		"type":         "text",
+		"default":      "",
 	},
 	{
 		"id":           "tvheadend_allchans",
