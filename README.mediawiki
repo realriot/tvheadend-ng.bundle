@@ -20,4 +20,5 @@ Thanks in advance
 [https://www.paypal.com/cgi-bin/webscr?no_note=0&lc=US&business=realriot%40realriot.de&item_name=GitHub+-+tvheadend-ng.bundle&cmd=_donations&currency_code=USD '''DONATE NOW VIA PAYPAL''']
 
 === Latest notes ===
-* Use the preferences options '''Force remuxed streaming''' if you have problems with transcoding and multi resolutions. The disadvantage is that it cannot be guaranteed that the format/codec will be compatible with your device.
+* This plex channel for tv-headend needs the TV-Headend API in version 15. An error message will occur if it's thr wrong version.
+* Additionally this channel supports streaming profiles provided by tv-headend.
