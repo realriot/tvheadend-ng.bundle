@@ -5,7 +5,7 @@ This channel streams content from a [https://github.com/moxz/tvheadend.bundle TV
 to any of your plex devices. If the TV-Headend system cannot transcode the stream, which is needed by browsers, iOS and Android
 devices, the plex service will do it instead. Please keep in mind that this transcoding process need a bigger
 CPU.
- 
+
 === Donation ===
 Since I'm developing in my free time I'd like to ask you to support my work.
 You can do it by contributing 5 EUR via paypal. This will give me motivation
