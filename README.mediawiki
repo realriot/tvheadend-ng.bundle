@@ -1,15 +1,11 @@
 === TV-Headend channel for Plex Media Server ===
 
-This is a fork of the already existing bundle from [https://github.com/moxz/tvheadend.bundle moxz]
-
-''So, what has changed?''
-
-* Code rewrite to access the new api functions of the latest tvheadend builds.
-* It's mandatory to enable the transcoding option within tvheadend. Otherwise you will not be able to stream to your web clients.
-* Within the first step and releases there will not be any recording support.
-
-''The TV-Headend channel icon is a mockup of the [https://tvheadend.org TV-Headend] and [http://plexapp.com Plex] logo. This Icon was created by [https://github.com/moxz/tvheadend.bundle moxz].''
-
+''What can this channel do for you?''
+This channel streams content from a [https://github.com/moxz/tvheadend.bundle TV-Headend] service right
+to any of your plex devices. If the TV-Headend system cannot transcode the stream, which is needed by browsers, iOS and Android
+devices, the plex service will do it instead. Please keep in mind that this transcoding process need a bigger
+CPU.
+ 
 === Donation ===
 Since I'm developing in my free time I'd like to ask you to support my work.
 You can do it by contributing 5 EUR via paypal. This will give me motivation
@@ -20,5 +16,6 @@ Thanks in advance
 [https://www.paypal.com/cgi-bin/webscr?no_note=0&lc=US&business=realriot%40realriot.de&item_name=GitHub+-+tvheadend-ng.bundle&cmd=_donations&currency_code=USD '''DONATE NOW VIA PAYPAL''']
 
 === Latest notes ===
-* This plex channel for tv-headend needs the TV-Headend API in version 15. An error message will occur if it's thr wrong version.
-* Additionally this channel supports streaming profiles provided by tv-headend.
+* This plex channel for TV-Headend needs the TV-Headend API in version 15. An error message will occur if it's the wrong version.
+* Additionally this channel supports streaming profiles provided by TV-Headend.
+* To see channel logos you have to configure your TV-Headend system to deliver them. A nice manual this can be found [https://tvheadend.org/boards/5/topics/13408?r=13674#message-13674 here]

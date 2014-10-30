@@ -56,13 +56,13 @@
 	},
 	{
 		"id":           "tvheadend_allchans",
-		"label":        "Activate all channel view",
+		"label":        "Enable allchannels view",
 		"type":         "bool",
 		"default":      "true",
 	},
 	{
 		"id":           "tvheadend_tagchans",
-		"label":        "Activate bouquet view",
+		"label":        "Enable bouquet view",
 		"type":         "bool",
 		"default":      "true",
 	}
