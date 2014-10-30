@@ -136,7 +136,7 @@ def getChannelInfo(uuid, services, json_epg):
 	if json_epg != False and json_epg.get('entries'):
 		for epg in json_epg['entries']:
 			if epg['channelUuid'] == uuid and time.time() > int(epg['start']) and time.time() < int(epg['stop']):
-				if epg.get('channelIcon') and epg['channelIcon'].startswith('imagecache'):
+				if Prefs['tvheadend_channelicons'] == True and epg.get('channelIcon') and epg['channelIcon'].startswith('imagecache'):
 					result['iconurl'] = 'http://%s:%s/%s' % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], epg['channelIcon'])
 				if epg.get('title'):
 					 result['epg_title'] = epg['title'];

@@ -49,6 +49,12 @@
 		"default":      "",
 	},
 	{
+		"id":		"tvheadend_channelicons",
+		"label":	"Show channel icons",
+		"type":		"bool",
+		"default":	"true",
+	},
+	{
 		"id":           "tvheadend_allchans",
 		"label":        "Activate all channel view",
 		"type":         "bool",
