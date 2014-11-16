@@ -8,5 +8,7 @@
   "error_unknown": "Unknown error!",
   "allchans": "All channels",
   "tagchans": "Bouquets",
-  "preferences": "Settings"
+  "preferences": "Settings",
+  "recordings": "Recordings",
+  "error_no_recordings": "No recordings found in TV-Headend"
 }
