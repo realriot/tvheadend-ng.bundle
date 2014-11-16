@@ -234,8 +234,8 @@ def getRecordings(title):
 		recordingsList.header = None
 		recordingsList.message = None
 		for recording in sorted(json_data['entries'], key=lambda t: t['title']):
-			if debug == True: Log("Got recordings with title: " + recording['title'])
-			recordinginfo = getRecordingsInfo(recordings['uuid'])
+			if debug == True: Log("Got recordings with title: " + str(recording['title']))
+			recordinginfo = getRecordingsInfo(recording['uuid'])
 			recordingsList.add(createRecordingObject(recording, recordinginfo, Client.Product, Client.Platform))
 	else:
 		if debug == True: Log("Could not create recordings list! Showing error.")
@@ -361,7 +361,7 @@ def createRecordingObject(recording, recordinginfo, cproduct, cplatform, contain
 		#summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], chaninfo['epg_description'])
 
 	# Build streaming url.
-	url_structure = 'stream/channel'
+	url_structure = 'dvrfile'
 	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
 
 	# Create raw VideoClipObject.
