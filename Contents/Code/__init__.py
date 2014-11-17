@@ -41,7 +41,8 @@ def MainMenu():
 			oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans'), thumb=ICON_ALLCHANS))
 		if Prefs['tvheadend_tagchans'] != False:
 			oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans'), thumb=ICON_BOUQUETS))
-		oc.add(DirectoryObject(key=Callback(getRecordings, title=L('recordings')), title=L('recordings'), thumb=ICON_BOUQUETS))
+		if Prefs['tvheadend_recordings'] != False:
+			oc.add(DirectoryObject(key=Callback(getRecordings, title=L('recordings')), title=L('recordings'), thumb=ICON_BOUQUETS))
 		oc.add(PrefsObject(title=L('preferences')))
 	else:
 		if debug == True: Log("Configuration error! Displaying error message: " + result['message'])

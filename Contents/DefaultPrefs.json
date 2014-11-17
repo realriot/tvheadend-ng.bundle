@@ -65,5 +65,11 @@
 		"label":        "Enable bouquet view",
 		"type":         "bool",
 		"default":      "true",
+	},
+	{
+		"id":           "tvheadend_recordings",
+		"label":        "Enable Recordings view",
+		"type":         "bool",
+		"default":      "true",
 	}
 ]
