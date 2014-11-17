@@ -1,4 +1,4 @@
-import urllib2, base64, simplejson, time
+import urllib2, base64, simplejson, time, datetime
 json = simplejson
 
 # Static text. 
@@ -158,8 +158,8 @@ def getRecordingsInfo(uuid):
 		'rec_title':'',
 		'rec_description':'',
 		'rec_duration':0,
-		'rec_start':0,
-		'rec_stop':0,
+		'rec_start':'',
+		'rec_stop':'',
 		'rec_summary':'',
 	}
 
@@ -169,9 +169,13 @@ def getRecordingsInfo(uuid):
 	if json_data['entries'][0]['params'][11].get('value'):
 		result['rec_title'] = json_data['entries'][0]['params'][11].get('value')
 	if json_data['entries'][0]['params'][12].get('value'):
-		result['rec_description'] = json_data['entries'][0]['params'][12].get('value')		
+		result['rec_description'] = json_data['entries'][0]['params'][12].get('value')
+	if json_data['entries'][0]['params'][0].get('value'):
+		result['rec_start'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][0].get('value')).strftime('%d-%m-%Y %H:%M')
+	if json_data['entries'][0]['params'][3].get('value'):
+		result['rec_stop'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][3].get('value')).strftime('%d-%m-%Y %H:%M')			
 	if json_data['entries'][0]['params'][6].get('value'):
-		result['rec_duration'] = json_data['entries'][0]['params'][6].get('value')	
+		result['rec_duration'] = json_data['entries'][0]['params'][6].get('value')*1000	
 	return result
 	####################################################################################################
 
@@ -341,7 +345,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 def createRecordingObject(recording, recordinginfo, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating RecordingObject. Container: " + str(container))
-	name = recording['title'] 
+	name = recordinginfo['rec_title'] 
 	icon = ""
 	if recordinginfo['iconurl'] != "":
 		icon = recordinginfo['iconurl']
@@ -354,11 +358,10 @@ def createRecordingObject(recording, recordinginfo, cproduct, cplatform, contain
 	if recordinginfo['rec_title'] != "" and recordinginfo['rec_start'] != 0 and recordinginfo['rec_stop'] != 0 and recordinginfo['rec_duration'] != 0:
 		if container == False:
 			name = name + " (" + recordinginfo['rec_title'] + ") - (" + recordinginfo['rec_start'] + " - " + recordinginfo['rec_stop'] + ")"
-			summary = ""
+			summary = recordinginfo['rec_description']
 		if container == True:
 			summary = recordinginfo['rec_title'] + "\n" + recordinginfo['rec_start'] + " - " + recordinginfo['rec_stop'] + "\n\n" + recordinginfo['rec_description'] 
 		duration = recordinginfo['rec_duration']
-		#summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], chaninfo['epg_description'])
 
 	# Build streaming url.
 	url_structure = 'dvrfile'
