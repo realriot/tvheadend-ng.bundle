@@ -168,8 +168,8 @@ def getRecordingsInfo(uuid):
 		result['iconurl'] = json_data['entries'][0]['params'][8].get('value')
 	if json_data['entries'][0]['params'][11].get('value'):
 		result['rec_title'] = json_data['entries'][0]['params'][11].get('value')
-	if json_data['entries'][0]['params'][12].get('value'):
-		result['rec_description'] = json_data['entries'][0]['params'][12].get('value')
+	if json_data['entries'][0]['params'][13].get('value'):
+		result['rec_description'] = json_data['entries'][0]['params'][13].get('value')
 	if json_data['entries'][0]['params'][0].get('value'):
 		result['rec_start'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][0].get('value')).strftime('%d-%m-%Y %H:%M')
 	if json_data['entries'][0]['params'][3].get('value'):
