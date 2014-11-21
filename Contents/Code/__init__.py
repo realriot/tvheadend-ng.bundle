@@ -1,4 +1,4 @@
-import urllib2, base64, simplejson, time
+import urllib2, base64, simplejson, time, datetime
 json = simplejson
 
 # Static text. 
@@ -41,6 +41,8 @@ def MainMenu():
 			oc.add(DirectoryObject(key=Callback(getChannels, title=L('allchans')), title=L('allchans'), thumb=ICON_ALLCHANS))
 		if Prefs['tvheadend_tagchans'] != False:
 			oc.add(DirectoryObject(key=Callback(getChannelsByTag, title=L('tagchans')), title=L('tagchans'), thumb=ICON_BOUQUETS))
+		if Prefs['tvheadend_recordings'] != False:
+			oc.add(DirectoryObject(key=Callback(getRecordings, title=L('recordings')), title=L('recordings'), thumb=ICON_BOUQUETS))
 		oc.add(PrefsObject(title=L('preferences')))
 	else:
 		if debug == True: Log("Configuration error! Displaying error message: " + result['message'])
@@ -90,7 +92,8 @@ def getTVHeadendJson(apirequest, arg1):
 		getServiceGrid='api/mpegts/service/grid?start=0&limit=999999',
 		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999',
 		getChannelTags='api/channeltag/grid?start=0&limit=999999',
-		getServerVersion='api/serverinfo'
+		getServerVersion='api/serverinfo',
+		getRecordings='api/dvr/entry/grid_finished'
 	)
 
 	try:
@@ -150,7 +153,32 @@ def getChannelInfo(uuid, services, json_epg):
 					result['epg_duration'] = (epg.get('stop')-epg.get('start'))*1000;
 	return result
 
-####################################################################################################
+def getRecordingsInfo(uuid):
+	result = {
+		'iconurl':'',
+		'rec_title':'',
+		'rec_description':'',
+		'rec_duration':0,
+		'rec_start':'',
+		'rec_stop':'',
+		'rec_summary':'',
+	}
+
+	json_data = getTVHeadendJson('getIdNode', uuid)
+	if json_data['entries'][0]['params'][8].get('value'):
+		result['iconurl'] = json_data['entries'][0]['params'][8].get('value')
+	if json_data['entries'][0]['params'][11].get('value'):
+		result['rec_title'] = json_data['entries'][0]['params'][11].get('value')
+	if json_data['entries'][0]['params'][13].get('value'):
+		result['rec_description'] = json_data['entries'][0]['params'][13].get('value')
+	if json_data['entries'][0]['params'][0].get('value'):
+		result['rec_start'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][0].get('value')).strftime('%d-%m-%Y %H:%M')
+	if json_data['entries'][0]['params'][3].get('value'):
+		result['rec_stop'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][3].get('value')).strftime('%d-%m-%Y %H:%M')			
+	if json_data['entries'][0]['params'][6].get('value'):
+		result['rec_duration'] = json_data['entries'][0]['params'][6].get('value')*1000	
+	return result
+	####################################################################################################
 
 def getChannelsByTag(title):
 	json_data = getTVHeadendJson('getChannelTags', '')
@@ -202,6 +230,30 @@ def getChannels(title, tag=int(0)):
 		channelList.message = L('error_request_failed')
        	return channelList
 
+def getRecordings(title):
+	json_data = getTVHeadendJson('getRecordings', '')
+	recordingsList = ObjectContainer(no_cache=True)
+
+	if json_data != False:
+		recordingsList.title1 = L('recordings')
+		recordingsList.header = None
+		recordingsList.message = None
+		for recording in sorted(json_data['entries'], key=lambda t: t['title']):
+			if debug == True: Log("Got recordings with title: " + str(recording['title']))
+			recordinginfo = getRecordingsInfo(recording['uuid'])
+			recordingsList.add(createRecordingObject(recording, recordinginfo, Client.Product, Client.Platform))
+	else:
+		if debug == True: Log("Could not create recordings list! Showing error.")
+		recordingsList.title1 = None
+		recordingsList.header = L('error')
+		recordingsList.message = L('error_request_failed') 
+
+	if debug == True: Log("Count of recordings within TV-Headend: " + str(len(recordingsList)))
+	if ( len(recordingsList) == 0 ):
+		recordingsList.header = L('attention')
+		recordingsList.message = L('error_no_recordings')
+	return recordingsList 
+
 ####################################################################################################
 
 def PlayVideo(url):
@@ -247,6 +299,78 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
 		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
+		rating_key = id,
+		title = name,
+		summary = summary,
+		duration = duration,
+		thumb = icon,
+	)
+
+	stream_defined = False
+	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
+	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
+		vco = addMediaObject(vco, url_base + id + '?profile=pass')
+		stream_defined = True
+
+	# Custom streaming profile for iOS.
+	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
+		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_ios'])
+		stream_defined = True
+
+        # Custom streaming profile for Android.
+	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
+		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_android'])
+		stream_defined = True
+
+        # Custom default streaming.
+	if stream_defined == False and (Prefs['tvheadend_custprof_default']):
+		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_default'])
+		stream_defined = True
+
+	# Default streaming.
+	if stream_defined == False:
+		vco = addMediaObject(vco, url_base + id)
+		stream_defined = True
+
+	# Log the product and platform which requested a stream.
+	if cproduct != None and cplatform != None:
+		if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
+	else:
+		if debug == True: Log("Created VideoObject for plex product: UNDEFINED")
+
+	if container:
+		return ObjectContainer(objects = [vco])
+	else:
+		return vco
+	return vco
+
+def createRecordingObject(recording, recordinginfo, cproduct, cplatform, container = False):
+	if debug == True: Log("Creating RecordingObject. Container: " + str(container))
+	name = recordinginfo['rec_title'] 
+	icon = ""
+	if recordinginfo['iconurl'] != "":
+		icon = recordinginfo['iconurl']
+	id = recording['uuid'] 
+	summary = ''
+	duration = 0
+
+	# Add epg data. Otherwise leave the fields blank by default.
+	if debug == True: Log("Info for mediaobject: " + str(recordinginfo))
+	if recordinginfo['rec_title'] != "" and recordinginfo['rec_start'] != 0 and recordinginfo['rec_stop'] != 0 and recordinginfo['rec_duration'] != 0:
+		if container == False:
+			name = name + " (" + recordinginfo['rec_title'] + ") - (" + recordinginfo['rec_start'] + " - " + recordinginfo['rec_stop'] + ")"
+			summary = recordinginfo['rec_description']
+		if container == True:
+			summary = recordinginfo['rec_title'] + "\n" + recordinginfo['rec_start'] + " - " + recordinginfo['rec_stop'] + "\n\n" + recordinginfo['rec_description'] 
+		duration = recordinginfo['rec_duration']
+
+	# Build streaming url.
+	url_structure = 'dvrfile'
+	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
+
+	# Create raw VideoClipObject.
+	vco = VideoClipObject(
+		key = Callback(createRecordingObject, recording = recording, recordinginfo = recordinginfo, cproduct = cproduct, cplatform = cplatform, container = True),
 		rating_key = id,
 		title = name,
 		summary = summary,
