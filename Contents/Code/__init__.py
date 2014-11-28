@@ -189,8 +189,9 @@ def getChannelsByTag(title):
 		tagList.header = None
 		tagList.message = None
 		for tag in sorted(json_data['entries'], key=lambda t: t['name']):
-			if debug == True: Log("Getting channellist for tag: " + tag['name'])
-			tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=tag['uuid']), title=tag['name']))
+			if tag['internal'] == False:
+				if debug == True: Log("Getting channellist for tag: " + tag['name'])
+				tagList.add(DirectoryObject(key=Callback(getChannels, title=tag['name'], tag=tag['uuid']), title=tag['name']))
 	else:
 		if debug == True: Log("Could not create tagelist! Showing error.")
 		tagList.title1 = None
