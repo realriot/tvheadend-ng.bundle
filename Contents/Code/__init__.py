@@ -101,7 +101,7 @@ def getTVHeadendJson(apirequest, arg1):
 	)
 
 	try:
-		url = 'http://%s:%s/%s' % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], api[apirequest])
+		url = 'http://%s:%s%s%s' % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], api[apirequest])
 		authstring = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
 		headers = dict()
 		headers['Authorization'] = "Basic %s" % (authstring)
@@ -142,11 +142,11 @@ def getChannelInfo(uuid, services, json_epg):
 		for epg in json_epg['entries']:
 			if epg['channelUuid'] == uuid and time.time() > int(epg['start']) and time.time() < int(epg['stop']):
 				if Prefs['tvheadend_channelicons'] == True and epg.get('channelIcon') and epg['channelIcon'].startswith('imagecache'):
-					result['iconurl'] = 'http://%s:%s@%s:%s/%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], epg['channelIcon'])
+					result['iconurl'] = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], epg['channelIcon'])
 				if epg.get('title'):
-					 result['epg_title'] = epg['title'];
+					 result['epg_title'] = epg['title']
 				if epg.get('description'):
-					 result['epg_description'] = epg['description'];
+					 result['epg_description'] = epg['description']
 				if epg.get('start'):
 					result['epg_start'] = time.strftime("%H:%M", time.localtime(int(epg['start'])));
 				if epg.get('stop'):
@@ -180,7 +180,7 @@ def getRecordingsInfo(uuid):
 	if json_data['entries'][0]['params'][6].get('value'):
 		result['rec_duration'] = json_data['entries'][0]['params'][6].get('value')*1000	
 	return result
-	####################################################################################################
+####################################################################################################
 
 def getChannelsByTag(title):
 	json_data = getTVHeadendJson('getChannelTags', '')
@@ -297,7 +297,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Build streaming url.
 	url_structure = 'stream/channel'
-	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
+	url_base = 'http://%s:%s@%s:%s%s%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure)
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
@@ -369,7 +369,7 @@ def createRecordingObject(recording, recordinginfo, cproduct, cplatform, contain
 
 	# Build streaming url.
 	url_structure = 'dvrfile'
-	url_base = 'http://%s:%s@%s:%s/%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], url_structure)
+	url_base = 'http://%s:%s@%s:%s%s%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure)
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
