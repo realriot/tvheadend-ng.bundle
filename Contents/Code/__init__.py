@@ -124,7 +124,7 @@ def getEPG():
 
 def getChannelInfo(uuid, services, json_epg):
 	result = {
-		'iconurl':'',
+		'iconurl':None,
 		'epg_title':'',
 		'epg_description':'',
 		'epg_duration':0,
@@ -134,8 +134,8 @@ def getChannelInfo(uuid, services, json_epg):
 	}
 
 	json_data = getTVHeadendJson('getIdNode', uuid)
-	if json_data['entries'][0]['params'][2].get('value'):
-		result['iconurl'] = json_data['entries'][0]['params'][2].get('value')
+	#if json_data['entries'][0]['params'][2].get('value'):
+	#	result['iconurl'] = json_data['entries'][0]['params'][2].get('value')
 
 	# Check if we have data within the json_epg object.
 	if json_epg != False and json_epg.get('entries'):
@@ -153,6 +153,7 @@ def getChannelInfo(uuid, services, json_epg):
 					result['epg_stop'] = time.strftime("%H:%M", time.localtime(int(epg['stop'])));
 				if epg.get('start') and epg.get('stop'):
 					result['epg_duration'] = (epg.get('stop')-epg.get('start'))*1000;
+	if debug == True: Log("Channelinfo: " + str(result))
 	return result
 
 def getRecordingsInfo(uuid):
@@ -277,8 +278,8 @@ def addMediaObject(vco, vurl):
 def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
 	name = channel['name'] 
-	icon = ""
-	if chaninfo['iconurl'] != "":
+	icon = None 
+	if chaninfo['iconurl'] != None:
 		icon = chaninfo['iconurl']
 	id = channel['uuid'] 
 	summary = ''
@@ -289,7 +290,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
 		if container == False:
 			name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + ")"
-			summary = ""
+			summary = chaninfo['epg_title'] + "\n" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + "\n\n" + chaninfo['epg_description'] 
 		if container == True:
 			summary = chaninfo['epg_title'] + "\n" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + "\n\n" + chaninfo['epg_description'] 
 		duration = chaninfo['epg_duration']
