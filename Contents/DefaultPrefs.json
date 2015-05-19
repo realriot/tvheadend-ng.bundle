@@ -24,6 +24,12 @@
 		"type": 	"text",
 		"default": 	"9981", 
 	},
+	{
+		"id":		"tvheadend_web_rootpath",
+		"label":	"Web root path",
+		"type":		"text",
+		"default":	"/",
+        },
         {
 		"id":		"tvheadend_mpegts_passthrough",
 		"label":	"MPEG-TS Pass-Through",
