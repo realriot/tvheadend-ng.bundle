@@ -7,7 +7,7 @@
   "error_gracenote_missing_clientid": "Eine Gracenote Client-ID zur Aktivierung der Gracenote Funktionalität fehlt.",
   "allchans": "Alle Sender",
   "tagchans": "Sender Bouquets",
-  "preferences": "Einstellungen"
+  "preferences": "Einstellungen",
   "recordings": "Aufnahmen",
   "error_no_recordings": "Keine Aufnahmen im TV-Headend gefunden."
 }
