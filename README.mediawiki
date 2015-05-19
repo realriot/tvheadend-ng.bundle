@@ -16,6 +16,7 @@ Thanks in advance
 [https://www.paypal.com/cgi-bin/webscr?no_note=0&lc=US&business=realriot%40realriot.de&item_name=GitHub+-+tvheadend-ng.bundle&cmd=_donations&currency_code=USD '''DONATE NOW VIA PAYPAL''']
 
 === Latest notes ===
+* Plex is able to transcode the incoming live stream. Telling TV-Headend to transcode can result in double transcoding and an overloaded cpu. Please use the passthrough by default.
 * This plex channel for TV-Headend needs the TV-Headend API in version 15. An error message will occur if it's the wrong version.
 * Additionally this channel supports streaming profiles provided by TV-Headend.
 * To see channel logos you have to configure your TV-Headend system to deliver them. A nice manual can be found [https://tvheadend.org/boards/5/topics/13408?r=13674#message-13674 here]
