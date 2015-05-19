@@ -1,11 +1,13 @@
 {
-  "attention": "Vorsicht",
+  "attention": "Achtung",
   "error": "Fehler",
   "error_no_config": "Konfigurationsfehler! Bitte überprüfen Sie Ihre Einstellungen.",
   "error_request_failed": "Aufruf fehlgeschlagen! Bitte überpüfen Sie Ihre Einstellungen und den Status von TVHeadend.",
   "error_no_tags": "Bitte fügen Sie Tags zu Ihrer TVHeadend Konfiguration hinzu, wenn Sie die Gruppenfunktion benutzen wollen. ",
   "error_gracenote_missing_clientid": "Eine Gracenote Client-ID zur Aktivierung der Gracenote Funktionalität fehlt.",
-  "allchans": "Alle Kanäle",
-  "tagchans": "Gruppen",
+  "allchans": "Alle Sender",
+  "tagchans": "Sender Bouquets",
   "preferences": "Einstellungen"
+  "recordings": "Aufnahmen",
+  "error_no_recordings": "Keine Aufnahmen im TV-Headend gefunden."
 }
