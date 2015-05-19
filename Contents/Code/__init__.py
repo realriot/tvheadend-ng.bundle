@@ -1,4 +1,4 @@
-import urllib2, base64, simplejson, time, datetime
+import base64, simplejson, time, datetime
 json = simplejson
 
 # Static text. 
@@ -55,6 +55,9 @@ def MainMenu():
 
 ####################################################################################################
 
+def ValidatePrefs():
+	return True
+
 def checkConfig():
 	global req_api_version
 	result = {
@@ -62,10 +65,11 @@ def checkConfig():
 		'message':''
 	}
 
-	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "":
+	if Prefs['tvheadend_user'] != "" and Prefs['tvheadend_pass'] != "" and Prefs['tvheadend_host'] != "" and Prefs['tvheadend_web_port'] != "" and Prefs['tvheadend_user'] != None and Prefs['tvheadend_pass'] != None and Prefs['tvheadend_host'] != None and Prefs['tvheadend_web_port'] != None:
 		# To validate the tvheadend connection and api version.
 		json_data = getTVHeadendJson('getServerVersion', '')
 		if json_data != False:
+			# if debug == True: Log("Server running API version: " + json_data['api_version'])
 			if json_data['api_version'] == req_api_version:
 				result['status'] = True
 				result['message'] = ''
@@ -76,7 +80,7 @@ def checkConfig():
 				return result
 		else:
 			result['status'] = False
-			result['message'] = L('error_unknown')
+			result['message'] = L('error_connection')
 			return result
 	else:
 		result['status'] = False
@@ -97,13 +101,11 @@ def getTVHeadendJson(apirequest, arg1):
 	)
 
 	try:
-                base64string = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
-                request = urllib2.Request("http://%s:%s/%s" % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], api[apirequest]))
-                request.add_header("Authorization", "Basic %s" % base64string)
-                response = urllib2.urlopen(request)
-
-                json_tmp = response.read().decode('utf-8')
-                json_data = json.loads(json_tmp)
+		url = 'http://%s:%s/%s' % (Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], api[apirequest])
+		authstring = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
+		headers = dict()
+		headers['Authorization'] = "Basic %s" % (authstring)
+		json_data = JSON.ObjectFromURL(url=url, headers=headers, values=None)
 	except Exception, e:
 		if debug == True: Log("JSON-Request failed: " + str(e))
 		return False
