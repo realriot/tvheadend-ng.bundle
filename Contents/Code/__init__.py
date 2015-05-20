@@ -124,7 +124,6 @@ def getEPG():
 
 def getChannelInfo(uuid, services, json_epg):
 	result = {
-		'iconurl':None,
 		'epg_title':'',
 		'epg_description':'',
 		'epg_duration':0,
@@ -133,16 +132,10 @@ def getChannelInfo(uuid, services, json_epg):
 		'epg_summary':'',
 	}
 
-	json_data = getTVHeadendJson('getIdNode', uuid)
-	#if json_data['entries'][0]['params'][2].get('value'):
-	#	result['iconurl'] = json_data['entries'][0]['params'][2].get('value')
-
 	# Check if we have data within the json_epg object.
 	if json_epg != False and json_epg.get('entries'):
 		for epg in json_epg['entries']:
 			if epg['channelUuid'] == uuid and time.time() > int(epg['start']) and time.time() < int(epg['stop']):
-				if Prefs['tvheadend_channelicons'] == True and epg.get('channelIcon') and epg['channelIcon'].startswith('imagecache'):
-					result['iconurl'] = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], epg['channelIcon'])
 				if epg.get('title'):
 					 result['epg_title'] = epg['title']
 				if epg.get('description'):
@@ -153,7 +146,6 @@ def getChannelInfo(uuid, services, json_epg):
 					result['epg_stop'] = time.strftime("%H:%M", time.localtime(int(epg['stop'])));
 				if epg.get('start') and epg.get('stop'):
 					result['epg_duration'] = (epg.get('stop')-epg.get('start'))*1000;
-	if debug == True: Log("Channelinfo: " + str(result))
 	return result
 
 def getRecordingsInfo(uuid):
@@ -278,12 +270,14 @@ def addMediaObject(vco, vurl):
 def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
 	name = channel['name'] 
-	icon = None 
-	if chaninfo['iconurl'] != None:
-		icon = chaninfo['iconurl']
-	id = channel['uuid'] 
+	id = channel['uuid']
 	summary = ''
 	duration = 0
+
+	# Handle channel icon.
+	icon = None 
+	if Prefs['tvheadend_channelicons'] == True and channel['icon_public_url'].startswith('imagecache'):
+		icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], channel['icon_public_url'])
 
 	# Add epg data. Otherwise leave the fields blank by default.
 	if debug == True: Log("Info for mediaobject: " + str(chaninfo))
