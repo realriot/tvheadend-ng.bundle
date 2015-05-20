@@ -122,8 +122,16 @@ def getEPG():
 		if debug_epg == True: Log("Failed to fetch EPG!")	
 	return json_data
 
-def getChannelInfo(uuid, services, json_epg):
+def getServices():
+	json_data = getTVHeadendJson('getServiceGrid','')
+	if json_data == False:
+		if debug_epg == True: Log("Failed to fetch DVB services!")
+	return json_data
+
+def getChannelInfo(uuid, services, json_epg, json_services):
 	result = {
+		'service_encrypted':None,
+		'service_type':'',
 		'epg_title':'',
 		'epg_description':'',
 		'epg_duration':0,
@@ -131,6 +139,12 @@ def getChannelInfo(uuid, services, json_epg):
 		'epg_stop':0,
 		'epg_summary':'',
 	}
+
+	# Get dvb informations.
+	for service in json_services['entries']:
+		if service['uuid'] == services[0]:
+			result['service_type'] = str(service['dvb_servicetype'])
+			result['service_encrypted'] = service['encrypted']
 
 	# Check if we have data within the json_epg object.
 	if json_epg != False and json_epg.get('entries'):
@@ -202,6 +216,7 @@ def getChannelsByTag(title):
 def getChannels(title, tag=int(0)):
 	json_data = getTVHeadendJson('getChannelGrid', '')
 	json_epg = getEPG()
+	json_services = getServices()
 	channelList = ObjectContainer(no_cache=True)
 
 	if json_data != False:
@@ -214,10 +229,10 @@ def getChannels(title, tag=int(0)):
 				for tids in tags:
 					if (tag == tids):
 						if debug == True: Log("Got channel with tag: " + channel['name'])
-						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
+						chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg, json_services)
 						channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
 			else:
-				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg)
+				chaninfo = getChannelInfo(channel['uuid'], channel['services'], json_epg, json_services)
 				channelList.add(createTVChannelObject(channel, chaninfo, Client.Product, Client.Platform))
 	else:
 		if debug == True: Log("Could not create channellist! Showing error.")
@@ -260,7 +275,7 @@ def addMediaObject(vco, vurl):
 			optimized_for_streaming = True,
 			#parts = [PartObject(key = vurl)],
 			parts = [PartObject(key = Callback(PlayVideo, url=vurl))],
-			video_codec = VideoCodec.H264,
+			#video_codec = VideoCodec.H264,
 			audio_codec = AudioCodec.AAC,
 		)
 	vco.add(media)
@@ -294,40 +309,50 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	url_structure = 'stream/channel'
 	url_base = 'http://%s:%s@%s:%s%s%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure)
 
-	# Create raw VideoClipObject.
-	vco = VideoClipObject(
-		key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
-		rating_key = id,
-		title = name,
-		summary = summary,
-		duration = duration,
-		thumb = icon,
-	)
+	# Create raw MediaContainer.
+	if chaninfo['service_type'] != '2':
+		mco = VideoClipObject(
+			key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
+			rating_key = id,
+			title = name,
+			summary = summary,
+			duration = duration,
+			thumb = icon,
+		)
+	else:
+		mco = TrackObject(
+			key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
+			rating_key = id,
+			title = name,
+			summary = summary,
+			duration = duration,
+			thumb = icon,
+		)
 
 	stream_defined = False
 	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
 	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
-		vco = addMediaObject(vco, url_base + id + '?profile=pass')
+		mco = addMediaObject(mco, url_base + id + '?profile=pass')
 		stream_defined = True
 
 	# Custom streaming profile for iOS.
 	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
-		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_ios'])
+		mco = addMediaObject(mco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_ios'])
 		stream_defined = True
 
         # Custom streaming profile for Android.
 	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
-		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_android'])
+		mco = addMediaObject(mco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_android'])
 		stream_defined = True
 
         # Custom default streaming.
 	if stream_defined == False and (Prefs['tvheadend_custprof_default']):
-		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_default'])
+		mco = addMediaObject(mco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_default'])
 		stream_defined = True
 
 	# Default streaming.
 	if stream_defined == False:
-		vco = addMediaObject(vco, url_base + id)
+		mco = addMediaObject(mco, url_base + id)
 		stream_defined = True
 
 	# Log the product and platform which requested a stream.
@@ -337,10 +362,10 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 		if debug == True: Log("Created VideoObject for plex product: UNDEFINED")
 
 	if container:
-		return ObjectContainer(objects = [vco])
+		return ObjectContainer(objects = [mco])
 	else:
-		return vco
-	return vco
+		return mco
+	return mco
 
 def createRecordingObject(recording, recordinginfo, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating RecordingObject. Container: " + str(container))
