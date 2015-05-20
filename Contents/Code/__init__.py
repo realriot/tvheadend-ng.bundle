@@ -311,6 +311,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Create raw MediaContainer.
 	if chaninfo['service_type'] != '2':
+		if debug == True: Log("Creating media object with type: VIDEO")
 		mco = VideoClipObject(
 			key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
 			rating_key = id,
@@ -320,10 +321,13 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 			thumb = icon,
 		)
 	else:
+		if debug == True: Log("Creating media object with type: AUDIO")
 		mco = TrackObject(
 			key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
 			rating_key = id,
 			title = name,
+			artist = ' ',
+			album = chaninfo['epg_title'], 
 			summary = summary,
 			duration = duration,
 			thumb = icon,
@@ -357,9 +361,9 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Log the product and platform which requested a stream.
 	if cproduct != None and cplatform != None:
-		if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
+		if debug == True: Log("Created MediaObject for plex product: " + cproduct + " on " + cplatform)
 	else:
-		if debug == True: Log("Created VideoObject for plex product: UNDEFINED")
+		if debug == True: Log("Created MediaObject for plex product: UNDEFINED")
 
 	if container:
 		return ObjectContainer(objects = [mco])
