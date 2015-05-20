@@ -267,20 +267,20 @@ def getRecordings(title):
 
 ####################################################################################################
 
-def PlayVideo(url):
+def PlayMedia(url):
 	return Redirect(url)
 
-def addMediaObject(vco, vurl):
+def addMediaObject(mco, vurl):
 	media = MediaObject(
 			optimized_for_streaming = True,
 			#parts = [PartObject(key = vurl)],
-			parts = [PartObject(key = Callback(PlayVideo, url=vurl))],
+			parts = [PartObject(key = Callback(PlayMedia, url=vurl))],
 			#video_codec = VideoCodec.H264,
-			audio_codec = AudioCodec.AAC,
+			#audio_codec = AudioCodec.AAC,
 		)
-	vco.add(media)
+	mco.add(media)
 	if debug == True: Log("Creating MediaObject for streaming with URL: " + vurl)
-	return vco
+	return mco
 
 def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
