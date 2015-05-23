@@ -164,7 +164,7 @@ def getChannelInfo(uuid, services, json_epg, json_services):
 
 def getRecordingsInfo(uuid):
 	result = {
-		'iconurl':'',
+		'icon_public_url':'',
 		'rec_title':'',
 		'rec_description':'',
 		'rec_duration':0,
@@ -250,7 +250,7 @@ def getRecordings(title):
 		recordingsList.header = None
 		recordingsList.message = None
 		for recording in sorted(json_data['entries'], key=lambda t: t['title']):
-			if debug == True: Log("Got recordings with title: " + str(recording['title']))
+			if debug == True: Log("Got recording with title: " + str(recording['title']))
 			recordinginfo = getRecordingsInfo(recording['uuid'])
 			recordingsList.add(createRecordingObject(recording, recordinginfo, Client.Product, Client.Platform))
 	else:
@@ -374,12 +374,14 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 def createRecordingObject(recording, recordinginfo, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating RecordingObject. Container: " + str(container))
 	name = recordinginfo['rec_title'] 
-	icon = ""
-	if recordinginfo['iconurl'] != "":
-		icon = recordinginfo['iconurl']
 	id = recording['uuid'] 
 	summary = ''
 	duration = 0
+
+	# Handle recording icon.
+	icon = None
+	if Prefs['tvheadend_channelicons'] == True and recording['channel_icon'].startswith('imagecache'):
+		icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], recording['channel_icon'])
 
 	# Add epg data. Otherwise leave the fields blank by default.
 	if debug == True: Log("Info for mediaobject: " + str(recordinginfo))
