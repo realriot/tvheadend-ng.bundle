@@ -162,31 +162,6 @@ def getChannelInfo(uuid, services, json_epg, json_services):
 					result['epg_duration'] = (epg.get('stop')-epg.get('start'))*1000;
 	return result
 
-def getRecordingsInfo(uuid):
-	result = {
-		'icon_public_url':'',
-		'rec_title':'',
-		'rec_description':'',
-		'rec_duration':0,
-		'rec_start':'',
-		'rec_stop':'',
-		'rec_summary':'',
-	}
-
-	json_data = getTVHeadendJson('getIdNode', uuid)
-	if json_data['entries'][0]['params'][8].get('value'):
-		result['iconurl'] = json_data['entries'][0]['params'][8].get('value')
-	if json_data['entries'][0]['params'][11].get('value'):
-		result['rec_title'] = json_data['entries'][0]['params'][11].get('value')
-	if json_data['entries'][0]['params'][13].get('value'):
-		result['rec_description'] = json_data['entries'][0]['params'][13].get('value')
-	if json_data['entries'][0]['params'][0].get('value'):
-		result['rec_start'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][0].get('value')).strftime('%d-%m-%Y %H:%M')
-	if json_data['entries'][0]['params'][3].get('value'):
-		result['rec_stop'] = datetime.datetime.fromtimestamp(json_data['entries'][0]['params'][3].get('value')).strftime('%d-%m-%Y %H:%M')			
-	if json_data['entries'][0]['params'][6].get('value'):
-		result['rec_duration'] = json_data['entries'][0]['params'][6].get('value')*1000	
-	return result
 ####################################################################################################
 
 def getChannelsByTag(title):
@@ -251,8 +226,7 @@ def getRecordings(title):
 		recordingsList.message = None
 		for recording in sorted(json_data['entries'], key=lambda t: t['title']):
 			if debug == True: Log("Got recording with title: " + str(recording['title']))
-			recordinginfo = getRecordingsInfo(recording['uuid'])
-			recordingsList.add(createRecordingObject(recording, recordinginfo, Client.Product, Client.Platform))
+			recordingsList.add(createRecordingObject(recording, Client.Product, Client.Platform))
 	else:
 		if debug == True: Log("Could not create recordings list! Showing error.")
 		recordingsList.title1 = None
@@ -371,9 +345,9 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 		return mco
 	return mco
 
-def createRecordingObject(recording, recordinginfo, cproduct, cplatform, container = False):
+def createRecordingObject(recording, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating RecordingObject. Container: " + str(container))
-	name = recordinginfo['rec_title'] 
+	name = recording['disp_title']
 	id = recording['uuid'] 
 	summary = ''
 	duration = 0
@@ -384,14 +358,16 @@ def createRecordingObject(recording, recordinginfo, cproduct, cplatform, contain
 		icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], recording['channel_icon'])
 
 	# Add epg data. Otherwise leave the fields blank by default.
-	if debug == True: Log("Info for mediaobject: " + str(recordinginfo))
-	if recordinginfo['rec_title'] != "" and recordinginfo['rec_start'] != 0 and recordinginfo['rec_stop'] != 0 and recordinginfo['rec_duration'] != 0:
+	if debug == True: Log("Info for mediaobject: " + str(recording))
+	if recording['disp_title'] != "" and recording['start'] != 0 and recording['stop'] != 0:
+		start = datetime.datetime.fromtimestamp(recording['start']).strftime('%d-%m-%Y %H:%M')
+		stop = datetime.datetime.fromtimestamp(recording['stop']).strftime('%d-%m-%Y %H:%M')
+		duration = (recording['stop']-recording['start'])*1000
 		if container == False:
-			name = name + " (" + recordinginfo['rec_title'] + ") - (" + recordinginfo['rec_start'] + " - " + recordinginfo['rec_stop'] + ")"
-			summary = recordinginfo['rec_description']
+			name = name + " (" + start + ")"
+			summary = recording['disp_subtitle']
 		if container == True:
-			summary = recordinginfo['rec_title'] + "\n" + recordinginfo['rec_start'] + " - " + recordinginfo['rec_stop'] + "\n\n" + recordinginfo['rec_description'] 
-		duration = recordinginfo['rec_duration']
+			summary = recording['disp_subtitle'] + "\n\n" + recording['disp_description']
 
 	# Build streaming url.
 	url_structure = 'dvrfile'
@@ -399,7 +375,7 @@ def createRecordingObject(recording, recordinginfo, cproduct, cplatform, contain
 
 	# Create raw VideoClipObject.
 	vco = VideoClipObject(
-		key = Callback(createRecordingObject, recording = recording, recordinginfo = recordinginfo, cproduct = cproduct, cplatform = cplatform, container = True),
+		key = Callback(createRecordingObject, recording = recording, cproduct = cproduct, cplatform = cplatform, container = True),
 		rating_key = id,
 		title = name,
 		summary = summary,
