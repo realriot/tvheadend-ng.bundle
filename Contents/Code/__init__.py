@@ -319,8 +319,8 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	if debug == True: Log("Creating TVChannelObject. Container: " + str(container))
 	name = channel['name'] 
 	id = channel['uuid']
-	summary = ''
-	duration = 0
+	summary = None
+	duration = None
 
 	# Handle channel icon.
 	icon = None 
@@ -332,11 +332,10 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 	if chaninfo['epg_title'] != "" and chaninfo['epg_start'] != 0 and chaninfo['epg_stop'] != 0 and chaninfo['epg_duration'] != 0:
 		if container == False:
 			name = name + " (" + chaninfo['epg_title'] + ") - (" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + ")"
-			summary = chaninfo['epg_title'] + "\n" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + "\n\n" + chaninfo['epg_description'] 
+			summary = chaninfo['epg_title'] + "\n\n" + chaninfo['epg_description'] 
 		if container == True:
-			summary = chaninfo['epg_title'] + "\n" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop'] + "\n\n" + chaninfo['epg_description'] 
+			summary = chaninfo['epg_title'] + "\n\n" + chaninfo['epg_description'] + "\n\n" + chaninfo['epg_start'] + " - " + chaninfo['epg_stop']
 		duration = chaninfo['epg_duration']
-		#summary = '%s (%s-%s)\n\n%s' % (chaninfo['epg_title'],chaninfo['epg_start'],chaninfo['epg_stop'], chaninfo['epg_description'])
 
 	# Build streaming url.
 	url_structure = 'stream/channel'
