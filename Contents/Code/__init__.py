@@ -244,6 +244,65 @@ def getRecordings(title):
 def PlayMedia(url):
 	return Redirect(url)
 
+def createMediaContainer(mctype, args):
+	mco = None
+	if debug == True: Log("Building VideoClip object")
+	if mctype == 'videoclip':
+		mco = VideoClipObject(
+			key = args['key'],
+			rating_key = args['rating_key'],
+			title = args['title'],
+			summary = args['summary'],
+			duration = args['duration'],
+			thumb = args['thumb'],
+		)
+	if debug == True: Log("Building AudioTrack object")
+	if mctype == 'audiotrack':
+		mco = TrackObject(
+			key = args['key'],
+			rating_key = args['rating_key'],
+			title = args['title'],
+			summary = args['summary'],
+			duration = args['duration'],
+			thumb = args['thumb'],
+			artist = args['artist'],
+			album = args['album'],
+		)
+
+	stream_defined = False
+	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
+	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
+		mco = addMediaObject(mco, args['url'] + '?profile=pass')
+		stream_defined = True
+
+	# Custom streaming profile for iOS.
+	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
+		mco = addMediaObject(mco, args['url'] + '?profile=' + Prefs['tvheadend_custprof_ios'])
+		stream_defined = True
+
+	# Custom streaming profile for Android.
+	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
+		mco = addMediaObject(mco, args['url'] + '?profile=' + Prefs['tvheadend_custprof_android'])
+		stream_defined = True
+
+	# Custom default streaming.
+	if stream_defined == False and (Prefs['tvheadend_custprof_default']):
+		mco = addMediaObject(mco, args['url'] + '?profile=' + Prefs['tvheadend_custprof_default'])
+		stream_defined = True
+
+	# Default streaming.
+	if stream_defined == False:
+		mco = addMediaObject(mco, args['url'])
+		stream_defined = True
+
+	# Log the product and platform which requested a stream.
+	if args['cproduct'] != None and args['cplatform'] != None:
+		if debug == True: Log("Created MediaObject for plex product: " + args['cproduct'] + " on " + args['cplatform'])
+	else:
+		if debug == True: Log("Created MediaObject for plex product: UNDEFINED")
+
+	return mco
+
 def addMediaObject(mco, vurl):
 	media = MediaObject(
 			optimized_for_streaming = True,
@@ -281,63 +340,34 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Build streaming url.
 	url_structure = 'stream/channel'
-	url_base = 'http://%s:%s@%s:%s%s%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure)
+	url = 'http://%s:%s@%s:%s%s%s/%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure, id)
 
-	# Create raw MediaContainer.
+	# Create and return MediaContainer.
+	mco = None
+	args = dict()
+	args['cproduct'] = cproduct
+	args['cplatform'] = cplatform
+	args['url'] = url
 	if chaninfo['service_type'] != '2':
 		if debug == True: Log("Creating media object with type: VIDEO")
-		mco = VideoClipObject(
-			key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
-			rating_key = id,
-			title = name,
-			summary = summary,
-			duration = duration,
-			thumb = icon,
-		)
+		args['key'] = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True)
+		args['rating_key'] = id
+		args['title'] = name
+		args['summary'] = summary
+		args['duration'] = duration
+		args['thumb'] = icon
+		mco = createMediaContainer('videoclip', args)
 	else:
 		if debug == True: Log("Creating media object with type: AUDIO")
-		mco = TrackObject(
-			key = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True),
-			rating_key = id,
-			title = name,
-			artist = ' ',
-			album = chaninfo['epg_title'], 
-			summary = summary,
-			duration = duration,
-			thumb = icon,
-		)
-
-	stream_defined = False
-	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
-	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
-		mco = addMediaObject(mco, url_base + id + '?profile=pass')
-		stream_defined = True
-
-	# Custom streaming profile for iOS.
-	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
-		mco = addMediaObject(mco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_ios'])
-		stream_defined = True
-
-        # Custom streaming profile for Android.
-	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
-		mco = addMediaObject(mco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_android'])
-		stream_defined = True
-
-        # Custom default streaming.
-	if stream_defined == False and (Prefs['tvheadend_custprof_default']):
-		mco = addMediaObject(mco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_default'])
-		stream_defined = True
-
-	# Default streaming.
-	if stream_defined == False:
-		mco = addMediaObject(mco, url_base + id)
-		stream_defined = True
-
-	# Log the product and platform which requested a stream.
-	if cproduct != None and cplatform != None:
-		if debug == True: Log("Created MediaObject for plex product: " + cproduct + " on " + cplatform)
-	else:
-		if debug == True: Log("Created MediaObject for plex product: UNDEFINED")
+		args['key'] = Callback(createTVChannelObject, channel = channel, chaninfo = chaninfo, cproduct = cproduct, cplatform = cplatform, container = True)
+		args['rating_key'] = id
+		args['title'] = name
+		args['summary'] = summary
+		args['duration'] = duration
+		args['thumb'] = icon
+		args['artist'] = ' '
+		args['album'] = chaninfo['epg_title']
+		mco = createMediaContainer('audiotrack', args)
 
 	if container:
 		return ObjectContainer(objects = [mco])
@@ -349,15 +379,15 @@ def createRecordingObject(recording, cproduct, cplatform, container = False):
 	if debug == True: Log("Creating RecordingObject. Container: " + str(container))
 	name = recording['disp_title']
 	id = recording['uuid'] 
-	summary = ''
-	duration = 0
+	summary = None
+	duration = None 
 
 	# Handle recording icon.
 	icon = None
 	if Prefs['tvheadend_channelicons'] == True and recording['channel_icon'].startswith('imagecache'):
 		icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], recording['channel_icon'])
 
-	# Add epg data. Otherwise leave the fields blank by default.
+	# Add recording informations. Otherwise leave the fields blank by default.
 	if debug == True: Log("Info for mediaobject: " + str(recording))
 	if recording['disp_title'] != "" and recording['start'] != 0 and recording['stop'] != 0:
 		start = datetime.datetime.fromtimestamp(recording['start']).strftime('%d-%m-%Y %H:%M')
@@ -367,56 +397,30 @@ def createRecordingObject(recording, cproduct, cplatform, container = False):
 			name = name + " (" + start + ")"
 			summary = recording['disp_subtitle']
 		if container == True:
-			summary = recording['disp_subtitle'] + "\n\n" + recording['disp_description']
+			summary = recording['disp_subtitle'] + "\n\n" + recording['disp_description'] + "\n\n" + start
 
 	# Build streaming url.
 	url_structure = 'dvrfile'
-	url_base = 'http://%s:%s@%s:%s%s%s/' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure)
+	url = 'http://%s:%s@%s:%s%s%s/%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], url_structure, id)
 
-	# Create raw VideoClipObject.
-	vco = VideoClipObject(
-		key = Callback(createRecordingObject, recording = recording, cproduct = cproduct, cplatform = cplatform, container = True),
-		rating_key = id,
-		title = name,
-		summary = summary,
-		duration = duration,
-		thumb = icon,
-	)
+	# Create and return MediaContainer.
+	mco = None
+	args = dict()
+	args['cproduct'] = cproduct
+	args['cplatform'] = cplatform
+	args['url'] = url
 
-	stream_defined = False
-	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
-	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
-		vco = addMediaObject(vco, url_base + id + '?profile=pass')
-		stream_defined = True
-
-	# Custom streaming profile for iOS.
-	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
-		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_ios'])
-		stream_defined = True
-
-        # Custom streaming profile for Android.
-	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
-		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_android'])
-		stream_defined = True
-
-        # Custom default streaming.
-	if stream_defined == False and (Prefs['tvheadend_custprof_default']):
-		vco = addMediaObject(vco, url_base + id + '?profile=' + Prefs['tvheadend_custprof_default'])
-		stream_defined = True
-
-	# Default streaming.
-	if stream_defined == False:
-		vco = addMediaObject(vco, url_base + id)
-		stream_defined = True
-
-	# Log the product and platform which requested a stream.
-	if cproduct != None and cplatform != None:
-		if debug == True: Log("Created VideoObject for plex product: " + cproduct + " on " + cplatform)
-	else:
-		if debug == True: Log("Created VideoObject for plex product: UNDEFINED")
+	if debug == True: Log("Creating media object with type: VIDEO")
+	args['key'] = Callback(createRecordingObject, recording = recording, cproduct = cproduct, cplatform = cplatform, container = True)
+	args['rating_key'] = id
+	args['title'] = name
+	args['summary'] = summary
+	args['duration'] = duration
+	args['thumb'] = icon
+	mco = createMediaContainer('videoclip', args)
 
 	if container:
-		return ObjectContainer(objects = [vco])
+		return ObjectContainer(objects = [mco])
 	else:
-		return vco
-	return vco
+		return mco
+	return mco
