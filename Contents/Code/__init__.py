@@ -324,8 +324,11 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 
 	# Handle channel icon.
 	icon = None 
-	if Prefs['tvheadend_channelicons'] == True and channel['icon_public_url'].startswith('imagecache'):
-		icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], channel['icon_public_url'])
+	try:
+		if Prefs['tvheadend_channelicons'] == True and channel['icon_public_url'].startswith('imagecache'):
+			icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], channel['icon_public_url'])
+	except KeyError:
+		pass
 
 	# Add epg data. Otherwise leave the fields blank by default.
 	if debug == True: Log("Info for mediaobject: " + str(chaninfo))
