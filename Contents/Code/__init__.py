@@ -83,9 +83,14 @@ def checkConfig():
 			result['message'] = L('error_connection')
 			return result
 	else:
-		result['status'] = False
-		result['message'] = L('error_connection')
-		return result
+		if Prefs['tvheadend_user'] == "" or Prefs['tvheadend_pass'] == "" or Prefs['tvheadend_user'] == None or Prefs['tvheadend_pass'] == None:
+			result['status'] = False
+			result['message'] = L('error_no_anonymous')
+			return result
+		else:
+			result['status'] = False
+			result['message'] = L('error_connection')
+			return result
 
 def getTVHeadendJson(apirequest, arg1):
 	if debug == True: Log("JSON-Request: " + apirequest)

@@ -4,6 +4,7 @@
   "error_request_failed": "Request failed! Please check channel settings and tvheadend status.",
   "error_no_tags": "Please add tags to your TV-Headend. Otherwise bouquets are not available.",
   "error_connection": "Connection error! Please check your configuration.",
+  "error_no_anonymous": "Connection error! Anonymous login not supported by this channel.",
   "error_api_version": "API version mismatch. This channel needs another TV-Headend version.",
   "error_unknown": "Unknown error!",
   "allchans": "All channels",
