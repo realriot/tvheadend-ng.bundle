@@ -130,7 +130,7 @@ def getEPG():
 def getServices():
 	json_data = getTVHeadendJson('getServiceGrid','')
 	if json_data == False:
-		if debug_epg == True: Log("Failed to fetch DVB services!")
+		if debug == True: Log("Failed to fetch DVB services!")
 	return json_data
 
 def getChannelInfo(uuid, services, json_epg, json_services):
@@ -199,7 +199,7 @@ def getChannels(title, tag=int(0)):
 	json_services = getServices()
 	channelList = ObjectContainer(no_cache=True)
 
-	if json_data != False:
+	if json_data != False and json_epg != False and json_services != False:
 		channelList.title1 = title
 		channelList.header = None
 		channelList.message = None
