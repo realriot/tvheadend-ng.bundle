@@ -110,8 +110,7 @@ def getTVHeadendJson(apirequest, arg1):
 		authstring = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
 		headers = dict()
 		headers['Authorization'] = "Basic %s" % (authstring)
-		json_data_tmp = JSON.ObjectFromURL(encoding='utf-8', url=url, headers=headers, values=None)
-		json_data = json_data_tmp.decode('utf-8', 'ignore')
+		json_data = JSON.ObjectFromURL(encoding='utf-8', url=url, headers=headers, values=None)
 	except Exception, e:
 		if debug == True: Log("JSON-Request failed: " + str(e))
 		return False
