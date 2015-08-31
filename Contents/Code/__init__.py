@@ -9,14 +9,19 @@ TEXT_TITLE = 'TV-Headend'
 ICON_DEFAULT = 'icon-default.png'
 ART_DEFAULT = 'art-default.jpg'
 
-ICON_ALLCHANS = R('icon_allchans.png')
-ICON_BOUQUETS = R('icon_bouquets.png')
+ICON_ALLCHANS = R('icon-allchans.png')
+ICON_BOUQUETS = R('icon-bouquets.png')
 
 # Other definitions.
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
-debug_epg = False 
+debug_epg = False
 req_api_version = 15
+
+# themovieDB
+BASE_URL = None
+SIZES = None
+debug_db = False
 
 ####################################################################################################
 
@@ -54,10 +59,11 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
-
+@route(PLUGIN_PREFIX + '/ValidatePrefs')
 def ValidatePrefs():
 	return True
 
+@route(PLUGIN_PREFIX + '/checkConfig')
 def checkConfig():
 	global req_api_version
 	result = {
@@ -92,6 +98,7 @@ def checkConfig():
 			result['message'] = L('error_connection')
 			return result
 
+@route(PLUGIN_PREFIX + '/getTVHeadendJson')
 def getTVHeadendJson(apirequest, arg1):
 	if debug == True: Log("JSON-Request: " + apirequest)
 	api = dict(
@@ -118,7 +125,7 @@ def getTVHeadendJson(apirequest, arg1):
 	return json_data
 
 ####################################################################################################
-
+@route(PLUGIN_PREFIX + '/getEPG')
 def getEPG():
 	json_data = getTVHeadendJson('getEpgGrid','')
 	if json_data != False:
@@ -127,12 +134,14 @@ def getEPG():
 		if debug_epg == True: Log("Failed to fetch EPG!")	
 	return json_data
 
+@route(PLUGIN_PREFIX + '/getServices')
 def getServices():
 	json_data = getTVHeadendJson('getServiceGrid','')
 	if json_data == False:
 		if debug == True: Log("Failed to fetch DVB services!")
 	return json_data
 
+@route(PLUGIN_PREFIX + '/getChannelInfo')
 def getChannelInfo(uuid, services, json_epg, json_services):
 	result = {
 		'service_encrypted':None,
@@ -168,7 +177,7 @@ def getChannelInfo(uuid, services, json_epg, json_services):
 	return result
 
 ####################################################################################################
-
+@route(PLUGIN_PREFIX + '/getChannelsByTag')
 def getChannelsByTag(title):
 	json_data = getTVHeadendJson('getChannelTags', '')
 	tagList = ObjectContainer(no_cache=True)
@@ -193,6 +202,7 @@ def getChannelsByTag(title):
 		tagList.message = L('error_no_tags')
 	return tagList 
 
+#@route(PLUGIN_PREFIX + '/getChannels', tag=int, t=int)
 def getChannels(title, tag=int(0)):
 	json_data = getTVHeadendJson('getChannelGrid', '')
 	json_epg = getEPG()
@@ -221,6 +231,7 @@ def getChannels(title, tag=int(0)):
 		channelList.message = L('error_request_failed')
        	return channelList
 
+@route(PLUGIN_PREFIX + '/getRecordings')
 def getRecordings(title):
 	json_data = getTVHeadendJson('getRecordings', '')
 	recordingsList = ObjectContainer(no_cache=True)
@@ -245,21 +256,25 @@ def getRecordings(title):
 	return recordingsList 
 
 ####################################################################################################
-
+@route(PLUGIN_PREFIX + '/PlayMedia')
 def PlayMedia(url):
+	Log("Redirecting Client to " + str(url) )
 	return Redirect(url)
 
+@route(PLUGIN_PREFIX + '/createMediaContainer')
 def createMediaContainer(mctype, args):
 	mco = None
 	if debug == True: Log("Building VideoClip object")
 	if mctype == 'videoclip':
 		mco = VideoClipObject(
-			key = args['key'],
-			rating_key = args['rating_key'],
-			title = args['title'],
-			summary = args['summary'],
-			duration = args['duration'],
-			thumb = args['thumb'],
+				key = args['key'],
+				rating_key = args['rating_key'],
+				title = args['title'],
+				summary = args['summary'],
+				duration = args['duration'],
+				thumb = args['thumb'],
+				art = args['art'],
+				source_title = 'TVHeadend',
 		)
 	if debug == True: Log("Building AudioTrack object")
 	if mctype == 'audiotrack':
@@ -270,8 +285,10 @@ def createMediaContainer(mctype, args):
 			summary = args['summary'],
 			duration = args['duration'],
 			thumb = args['thumb'],
+			art = args['art'],
 			artist = args['artist'],
 			album = args['album'],
+			source_title = 'TVHeadend'
 		)
 
 	stream_defined = False
@@ -308,6 +325,7 @@ def createMediaContainer(mctype, args):
 
 	return mco
 
+@route(PLUGIN_PREFIX + '/addMediaObject')
 def addMediaObject(mco, vurl):
 	media = MediaObject(
 			optimized_for_streaming = True,
@@ -334,6 +352,17 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 			icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], channel['icon_public_url'])
 	except KeyError:
 		pass
+
+	#themovieDB
+	banner = None
+	if Prefs['tvheadend_use_themovieDB']:
+		tempArt = getArt(chaninfo['epg_title'])
+		if tempArt['poster'] != '':
+			icon = tempArt['poster']
+			Log.Info("Setting icon to: " + str(icon))
+		if tempArt['banner'] != '':
+			banner = tempArt['banner']
+			Log.Info("Setting banner to: " + str(banner))
 
 	# Add epg data. Otherwise leave the fields blank by default.
 	if debug == True: Log("Info for mediaobject: " + str(chaninfo))
@@ -363,6 +392,8 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 		args['summary'] = summary
 		args['duration'] = duration
 		args['thumb'] = icon
+		args['art'] = banner
+		args['epg_title'] = chaninfo['epg_title']
 		mco = createMediaContainer('videoclip', args)
 	else:
 		if debug == True: Log("Creating media object with type: AUDIO")
@@ -372,6 +403,7 @@ def createTVChannelObject(channel, chaninfo, cproduct, cplatform, container = Fa
 		args['summary'] = summary
 		args['duration'] = duration
 		args['thumb'] = icon
+		args['art'] = banner
 		args['artist'] = ' '
 		args['album'] = chaninfo['epg_title']
 		mco = createMediaContainer('audiotrack', args)
@@ -393,6 +425,17 @@ def createRecordingObject(recording, cproduct, cplatform, container = False):
 	icon = None
 	if Prefs['tvheadend_channelicons'] == True and recording['channel_icon'].startswith('imagecache'):
 		icon = 'http://%s:%s@%s:%s%s%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'], Prefs['tvheadend_host'], Prefs['tvheadend_web_port'], Prefs['tvheadend_web_rootpath'], recording['channel_icon'])
+
+        #themovieDB
+        banner = None
+        if Prefs['tvheadend_use_themovieDB']:
+                tempArt = getArt(name)
+                if tempArt['poster'] != '':
+                        icon = tempArt['poster']
+                        Log.Info("Setting icon to: " + str(icon))
+                if tempArt['banner'] != '':
+                        banner = tempArt['banner']
+                        Log.Info("Setting banner to: " + str(banner))
 
 	# Add recording informations. Otherwise leave the fields blank by default.
 	if debug == True: Log("Info for mediaobject: " + str(recording))
@@ -424,6 +467,7 @@ def createRecordingObject(recording, cproduct, cplatform, container = False):
 	args['summary'] = summary
 	args['duration'] = duration
 	args['thumb'] = icon
+	args['art'] = banner
 	mco = createMediaContainer('videoclip', args)
 
 	if container:
@@ -431,3 +475,72 @@ def createRecordingObject(recording, cproduct, cplatform, container = False):
 	else:
 		return mco
 	return mco
+
+####################################################################################################
+def getConfig():
+        global BASE_URL, SIZES
+        headers = {
+                'Accept': 'application/json',
+                }
+        URL = 'http://api.themoviedb.org/3/configuration?api_key=%s' % Prefs['tvheadend_themovieDB_key']
+	try:
+		config = JSON.ObjectFromURL( URL , headers=headers , values=None )
+	except:
+		Log.Warn("Error connecting to themovieDB API")
+		return
+        BASE_URL = config['images']['base_url']
+        SIZES = config['images']['poster_sizes']
+        return
+
+def searchDB(query):
+	Log("Searching themovieDB for: " + str(query))
+        headers = {
+                'Accept': 'application/json'
+                }
+        URL = 'http://api.themoviedb.org/3/search/multi?api_key=%s&query=%s' % (Prefs['tvheadend_themovieDB_key'], String.Quote(query))
+        try:
+		return JSON.ObjectFromURL( URL , headers=headers , values=None )
+	except Exception, e:
+		Log("Error: failed to get results -> " + str(e))
+		return
+
+def getArt(show):
+        global BASE_URL
+	poster = None
+	banner = None
+
+	API_RESULTS = searchDB(show)
+        if debug_db == True: print json.dumps(API_RESULTS, indent=4, separators=(',',': '))
+	if BASE_URL is None:
+		getConfig()
+        if API_RESULTS != None and int(API_RESULTS['total_results']) > 0 :
+		for result in API_RESULTS['results']:
+			try:
+				if result['name'] == show and ( result['poster_path'] != None or result['backdrop_path'] != None ):
+					poster = result['poster_path']
+					banner = result['backdrop_path']
+					Log.Debug("Found result on themovieDB: { name: " + str(result['name']) + ", poster: " + str(poster) + ", banner: " + str(banner) + " }")
+					break
+			except KeyError:
+				if result['title'] == show and ( result['poster_path'] != 'null' or result['backdrop_path'] != 'null' ):
+                                        poster = result['poster_path']
+                                        banner = result['backdrop_path']
+					Log.Debug("Found result on themovieDB: { title: " + str(result['title']) + ", poster: " + str(poster) + ", banner: " + str(banner) + " }")
+                                        break
+			except:
+				pass
+	else:
+		Log.Info("No Results on themovieDB")
+		return { 'poster': '', 'banner': '' }
+
+	if poster != 'null' and poster != None:
+		poster_url = str(BASE_URL) + 'w342' + str(poster)
+	else:
+		poster_url = ''
+
+	if banner != 'null' and banner != None:
+		banner_url = str(BASE_URL) + 'original' + str(banner)
+	else:
+		banner_url = ''
+
+	return { 'poster': poster_url, 'banner': banner_url }
