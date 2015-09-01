@@ -213,7 +213,7 @@ def getChannels(title, tag=int(0)):
 		channelList.title1 = title
 		channelList.header = None
 		channelList.message = None
-		for channel in sorted(json_data['entries'], key=lambda t: t['number']):
+		for channel in sorted(json_data['entries'], key=lambda t: float(t['number'])):
 			if tag > 0:
 				tags = channel['tags']
 				for tids in tags:
@@ -522,11 +522,14 @@ def getArt(show):
 					Log.Debug("Found result on themovieDB: { name: " + str(result['name']) + ", poster: " + str(poster) + ", banner: " + str(banner) + " }")
 					break
 			except KeyError:
-				if result['title'] == show and ( result['poster_path'] != 'null' or result['backdrop_path'] != 'null' ):
-                                        poster = result['poster_path']
-                                        banner = result['backdrop_path']
-					Log.Debug("Found result on themovieDB: { title: " + str(result['title']) + ", poster: " + str(poster) + ", banner: " + str(banner) + " }")
-                                        break
+				try:
+					if result['title'] == show and ( result['poster_path'] != 'null' or result['backdrop_path'] != 'null' ):
+                                        	poster = result['poster_path']
+                                        	banner = result['backdrop_path']
+						Log.Debug("Found result on themovieDB: { title: " + str(result['title']) + ", poster: " + str(poster) + ", banner: " + str(banner) + " }")
+                                        	break
+				except:
+					pass
 			except:
 				pass
 	else:
