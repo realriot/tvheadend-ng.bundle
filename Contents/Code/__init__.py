@@ -16,7 +16,7 @@ ICON_BOUQUETS = R('icon-bouquets.png')
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
 debug_epg = False
-req_api_version = 15
+req_api_version = 18
 
 # themovieDB
 BASE_URL = None
