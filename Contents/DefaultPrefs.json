@@ -35,6 +35,18 @@
 		"label":	"MPEG-TS Pass-Through",
 		"type":		"bool",
 		"default":	"true",
+	},
+	{
+		"id":		"tvheadend_use_themovieDB",
+		"label":	"Use themovieDB for artwork",
+		"type":		"bool",
+		"default":	"false",
+        },
+        {
+                "id":           "tvheadend_themovieDB_key",
+                "label":        "themovieDB API Key",
+                "type":         "text",
+                "default":      "",
         },
 	{
 		"id":		"tvheadend_custprof_default",
