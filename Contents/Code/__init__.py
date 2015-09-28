@@ -77,7 +77,7 @@ def checkConfig():
 		json_data = getTVHeadendJson('getServerVersion', '')
 		if json_data != False:
 			# if debug == True: Log("Server running API version: " + json_data['api_version'])
-			if json_data['api_version'] == req_api_version:
+			if json_data['api_version'] >= req_api_version:
 				result['status'] = True
 				result['message'] = ''
 				return result
