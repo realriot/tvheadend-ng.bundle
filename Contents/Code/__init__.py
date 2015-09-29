@@ -15,7 +15,7 @@ ICON_BOUQUETS = R('icon-bouquets.png')
 # Other definitions.
 PLUGIN_PREFIX = '/video/tvheadend-ng'
 debug = True
-debug_epg = True 
+debug_epg = False
 # MINIMUM API version to run this channel.
 req_api_version = 15
 
@@ -104,7 +104,7 @@ def getTVHeadendJson(apirequest, arg1):
 	if debug == True: Log("JSON-Request: " + apirequest)
 	api = dict(
 		getChannelGrid='api/channel/grid?start=0&limit=999999',
-		getEpgGrid='api/epg/events/grid?start=0&limit=1000',
+		getEpgGrid='api/epg/events/grid?start=0&limit=2000',
 		getIdNode='api/idnode/load?uuid=' + arg1,
 		getServiceGrid='api/mpegts/service/grid?start=0&limit=999999',
 		getMuxGrid='api/mpegts/mux/grid?start=0&limit=999999',
@@ -118,7 +118,16 @@ def getTVHeadendJson(apirequest, arg1):
 		authstring = base64.encodestring('%s:%s' % (Prefs['tvheadend_user'], Prefs['tvheadend_pass'])).replace('\n', '')
 		headers = dict()
 		headers['Authorization'] = "Basic %s" % (authstring)
-		json_data = JSON.ObjectFromURL(encoding='utf-8', url=url, headers=headers, values=None)
+
+		json_data = "" 
+		try:
+			json_data = JSON.ObjectFromURL(encoding='utf-8', url=url, headers=headers, values=None)
+		except:
+			try:
+				json_data = JSON.ObjectFromURL(url=url, headers=headers, values=None)
+			except:
+				raise("JSON encoding error")
+
 	except Exception, e:
 		if debug == True: Log("JSON-Request failed: " + str(e))
 		return False
@@ -154,6 +163,8 @@ def getChannelInfo(uuid, services, json_epg, json_services):
 		'epg_stop':0,
 		'epg_summary':'',
 	}
+	if debug == True: Log("Merging channel informations (EPG and services) for channel uuid: " + uuid)
+	if json_epg == False: Log("No EPG informations available for channel uuid: " + uuid)
 
 	# Get dvb informations.
 	for service in json_services['entries']:
@@ -163,8 +174,10 @@ def getChannelInfo(uuid, services, json_epg, json_services):
 
 	# Check if we have data within the json_epg object.
 	if json_epg != False and json_epg.get('entries'):
+		if debug == True: Log("Looking up EPG informations for channel uuid: " + uuid)
 		for epg in json_epg['entries']:
 			if epg['channelUuid'] == uuid and time.time() > int(epg['start']) and time.time() < int(epg['stop']):
+				if debug == True: Log("Found EPG informations for channel uuid: " + uuid)
 				if epg.get('title'):
 					 result['epg_title'] = epg['title']
 				if epg.get('description'):
