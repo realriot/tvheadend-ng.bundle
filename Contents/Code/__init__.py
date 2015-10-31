@@ -307,17 +307,17 @@ def createMediaContainer(mctype, args):
 
 	stream_defined = False
 	# Decide if we have to stream for native streaming devices or if we have to transcode the content.
-	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (cproduct == "Plex Home Theater" or cproduct == "PlexConnect")):
+	if (Prefs['tvheadend_mpegts_passthrough'] == True) or (stream_defined == False and (args['cproduct'] == "Plex Home Theater" or args['cproduct'] == "PlexConnect")):
 		mco = addMediaObject(mco, args['url'] + '?profile=pass')
 		stream_defined = True
 
 	# Custom streaming profile for iOS.
-	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and cplatform == "iOS"):
+	if stream_defined == False and (Prefs['tvheadend_custprof_ios'] != None and args['cplatform'] == "iOS"):
 		mco = addMediaObject(mco, args['url'] + '?profile=' + Prefs['tvheadend_custprof_ios'])
 		stream_defined = True
 
 	# Custom streaming profile for Android.
-	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and cplatform == "Android"):
+	if stream_defined == False and (Prefs['tvheadend_custprof_android'] != None and args['cplatform'] == "Android"):
 		mco = addMediaObject(mco, args['url'] + '?profile=' + Prefs['tvheadend_custprof_android'])
 		stream_defined = True
 
