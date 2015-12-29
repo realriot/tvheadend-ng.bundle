@@ -126,7 +126,7 @@ def getTVHeadendJson(apirequest, arg1):
 			try:
 				json_data = JSON.ObjectFromURL(url=url, headers=headers, values=None)
 			except:
-				raise("JSON encoding error")
+				raise Exception("JSON encoding error")
 
 	except Exception, e:
 		if debug == True: Log("JSON-Request failed: " + str(e))
